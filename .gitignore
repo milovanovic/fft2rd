@@ -1,0 +1,9 @@
+python/__pycache__/
+test_run_dir/
+
+*.fir
+*.v
+*.zip
+
+target/
+project/
