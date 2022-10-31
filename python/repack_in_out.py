@@ -320,13 +320,11 @@ expected_data = flatten_fft2_data_cube(fft2_data_cube_py_model, 192)
 insert_header_and_write_data_to_file(expected_data, 192, range_fft_size, 'gen_data_dir/complex_data_out_hex_py.txt')
 
 if check_stream_data_equality(expected_data, fft2_flatten_data):
-    print("All data are ok")
+    print("All data are ok!")
 
 for m in range(num_rxs*num_txs):
     r = int(m % num_rxs)
     t = int(m / num_rxs)
-    print(r)
-    print(t)
     fft2_data_matrix_fpga = fft2_data_cube[m][:][:]
     plot_fft2_linear(fft2_data_matrix_fpga, extent_values, r, t)
 
