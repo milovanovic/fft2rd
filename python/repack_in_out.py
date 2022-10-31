@@ -259,8 +259,8 @@ doppler_fft_size = radar_conf_info['doppler_fft_size']
 
 total_in_data = num_rxs * num_txs * range_fft_size * doppler_fft_size
 total_out_data = total_in_data + 512
-file_name_out = "complex_data_out_hex.txt"
-file_name_in = "complex_data_in_hex.txt"
+file_name_out = "gen_data_dir/complex_data_out_hex.txt"
+file_name_in = "gen_data_dir/complex_data_in_hex.txt"
 
 write_data_to_file(file_name_out, axis_data_column_out[:total_out_data])
 write_data_to_file(file_name_in, axis_data_column_in[:total_in_data])
@@ -317,7 +317,7 @@ for t in range(1):
         plot_fft2_linear(fft2_data_cube_py_model[r, :, t, :], extent_values, r, t)
 
 expected_data = flatten_fft2_data_cube(fft2_data_cube_py_model, 192)
-insert_header_and_write_data_to_file(expected_data, 192, range_fft_size, 'complex_data_out_hex_py.txt')
+insert_header_and_write_data_to_file(expected_data, 192, range_fft_size, 'gen_data_dir/complex_data_out_hex_py.txt')
 
 if check_stream_data_equality(expected_data, fft2_flatten_data):
     print("All data are ok")
