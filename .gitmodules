@@ -1,0 +1,6 @@
+[submodule "generators/sdf-fft"]
+	path = generators/sdf-fft
+	url = https://github.com/milovanovic/sdf-fft.git
+[submodule "generators/zeropadder"]
+	path = generators/zeropadder
+	url = https://github.com/milovanovic/zeropadder.git
