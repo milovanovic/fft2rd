@@ -1,0 +1,20 @@
+{ signal: [
+  { name: "clk",     wave: 'P.|...', period: '4' },
+  ['2D-FFT result',
+  { name: 'Rx<sub>1</sub>Tx<sub>1</sub>', wave: '3...3...3....|..3...3...4', phase: 0,  data: 'Re<sub>1</sub>Im<sub>1</sub> Re<sub>2</sub>Im<sub>2</sub>  ...  Re<sub>k-1</sub>Im<sub>k-1</sub> Re<sub>k</sub>Im<sub>k</sub>' },
+  { name: 'Rx<sub>2</sub>Tx<sub>1</sub>', wave: '4...4...4....|..4...4...2', phase: 0,  data: 'Re<sub>1</sub>Im<sub>1</sub> Re<sub>2</sub>Im<sub>2</sub>  ...  Re<sub>k-1</sub>Im<sub>k-1</sub> Re<sub>k</sub>Im<sub>k</sub>' },
+  { name: '***', wave: '2.....|........|.........', phase: 0 },
+  { name: 'Rx<sub>n</sub>Tx<sub>1</sub>', wave: '5...5...5....|..5...5...2', phase: 0,  data: 'Re<sub>1</sub>Im<sub>1</sub> Re<sub>2</sub>Im<sub>2</sub>  ...  Re<sub>k-1</sub>Im<sub>k-1</sub> Re<sub>k</sub>Im<sub>k</sub>' },
+  { name: '***', wave: '2.....|........|.........', phase: 0 },
+  { name: '***', wave: '2.....|........|.........', phase: 0 },
+
+  { name: 'Rx<sub>1</sub>Tx<sub>t</sub>', wave: '6...6...6....|..6...6...7', phase: 0,  data: 'Re<sub>1</sub>Im<sub>1</sub> Re<sub>2</sub>Im<sub>2</sub>  ...  Re<sub>k-1</sub>Im<sub>k-1</sub> Re<sub>k</sub>Im<sub>k</sub>' },
+  { name: 'Rx<sub>2</sub>Tx<sub>t</sub>', wave: '7...7...7....|..7...7...2', phase: 0,  data: 'Re<sub>1</sub>Im<sub>1</sub> Re<sub>2</sub>Im<sub>2</sub>  ...  Re<sub>k-1</sub>Im<sub>k-1</sub> Re<sub>k</sub>Im<sub>k</sub>' },
+     { name: '***', wave: '2.....|........|.........', phase: 0 },
+
+  { name: 'Rx<sub>n</sub>Tx<sub>t</sub>', wave: '8...8...8....|..8...8...x', phase: 0,  data: 'Re<sub>1</sub>Im<sub>1</sub> Re<sub>2</sub>Im<sub>2</sub>  ...  Re<sub>k-1</sub>Im<sub>k-1</sub> Re<sub>k</sub>Im<sub>k</sub>' },
+ ],
+ ],
+
+  "config": { "skin": "narrow" }
+}
