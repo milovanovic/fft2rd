@@ -10,7 +10,7 @@
 // import freechips.rocketchip.diplomacy._
 // import freechips.rocketchip.regmapper._
 //
-// trait AXI4FFT2ControlStandaloneBlock extends AXI4StreamFFT2ControlBlock {
+// trait AXI4FFT2RDControlStandaloneBlock extends AXI4StreamFFT2RDControlBlock {
 //   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
 //   val ioMem = mem.map { m => {
 //     val ioMemNode = BundleBridgeSource(() => AXI4Bundle(standaloneParams))
@@ -36,7 +36,7 @@
 //   val out = InModuleBody { ioOutNode.makeIO() }
 // }
 //
-// abstract class FFT2ControlBlock [D, U, E, O, B <: Data] (params: FFT2ControlParams, beatBytes: Int) extends LazyModule()(Parameters.empty) with DspBlock[D, U, E, O, B] with HasCSR {
+// abstract class FFT2RDControlBlock [D, U, E, O, B <: Data] (params: FFT2RDControlParams, beatBytes: Int) extends LazyModule()(Parameters.empty) with DspBlock[D, U, E, O, B] with HasCSR {
 //
 //   val streamNode = AXI4StreamIdentityNode()
 //
@@ -213,15 +213,15 @@
 //   }
 // }
 //
-// class AXI4StreamFFT2ControlBlock(params: FFT2ControlParams, address: AddressSet, _beatBytes: Int = 4) (implicit p: Parameters) extends FFT2ControlBlock[AXI4MasterPortParameters, AXI4SlavePortParameters, AXI4EdgeParameters, AXI4EdgeParameters, AXI4Bundle](params, _beatBytes) with AXI4DspBlock with AXI4HasCSR {
+// class AXI4StreamFFT2RDControlBlock(params: FFT2RDControlParams, address: AddressSet, _beatBytes: Int = 4) (implicit p: Parameters) extends FFT2RDControlBlock[AXI4MasterPortParameters, AXI4SlavePortParameters, AXI4EdgeParameters, AXI4EdgeParameters, AXI4Bundle](params, _beatBytes) with AXI4DspBlock with AXI4HasCSR {
 //   override val mem = Some(AXI4RegisterNode(address = address, beatBytes = _beatBytes))
 // }
 //
-// object FFT2ControlDspBlockAXI4 extends App
+// object FFT2RDControlDspBlockAXI4 extends App
 // {
-//   val paramsFFT2Control: FFT2ControlParams = FFT2ControlParams()
+//   val paramsFFT2RDControl: FFT2RDControlParams = FFT2RDControlParams()
 //   implicit val p: Parameters = Parameters.empty
 //
-//   val fft2Module = LazyModule(new AXI4StreamFFT2ControlBlock(paramsFFT2Control, AddressSet(0x00000, 0xFF), _beatBytes = 4) with AXI4FFT2ControlStandaloneBlock)
+//   val fft2Module = LazyModule(new AXI4StreamFFT2RDControlBlock(paramsFFT2RDControl, AddressSet(0x00000, 0xFF), _beatBytes = 4) with AXI4FFT2RDControlStandaloneBlock)
 //   chisel3.Driver.execute(args, ()=> fft2Module.module)
 // }

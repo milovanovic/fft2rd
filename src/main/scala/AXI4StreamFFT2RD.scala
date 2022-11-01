@@ -14,7 +14,7 @@ import zeropadder._
 
 //import dsputils._
 
-trait AXI4FFT2StandaloneBlock extends AXI4StreamFFT2Block[FixedPoint] {
+trait AXI4FFT2RDStandaloneBlock extends AXI4StreamFFT2RDBlock[FixedPoint] {
   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
 
   val ioMem = mem.map { m => {
@@ -50,9 +50,9 @@ trait AXI4FFT2StandaloneBlock extends AXI4StreamFFT2Block[FixedPoint] {
   }
 }
 
-class AXI4StreamFFT2Block [T <: Data : Real: BinaryRepresentation] (val params: FFT2Params[T], val beatBytes: Int) extends LazyModule()(Parameters.empty) {
+class AXI4StreamFFT2RDBlock [T <: Data : Real: BinaryRepresentation] (val params: FFT2RDParams[T], val beatBytes: Int) extends LazyModule()(Parameters.empty) {
   // number of chirps
-  val fft2Control = LazyModule(new AXI4StreamFFT2ControlBlock(params.fft2ControlParams, params.fft2ControlAddress, beatBytes = beatBytes))
+  val fft2Control = LazyModule(new AXI4StreamFFT2RDControlBlock(params.fft2ControlParams, params.fft2ControlAddress, beatBytes = beatBytes))
   val rangeFFT    = LazyModule(new AXI4MultipleFFTsBlock(params.rangeFFTParams, params.rangeFFTAddress, _beatBytes = beatBytes, configInterface = false))
   val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.dopplerFFTParams, params.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
   val zeroPadderRange = if (params.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.zeroPadderRangeParams.get, params.zeroPadderRangeAddress.get))) else None
@@ -98,14 +98,14 @@ class AXI4StreamFFT2Block [T <: Data : Real: BinaryRepresentation] (val params: 
   lazy val module = new LazyModuleImp(this) {}
 }
 
-object FFT2DspBlockAXI4 extends App
+object FFT2RDDspBlockAXI4 extends App
 {
   val rangeFFTSize = 256
   val dopplerFFTSize = 32
   val numTxs = 3
   val numRxs = 4
 
-  val paramsFFT2: FFT2Params[FixedPoint] = FFT2Params (
+  val paramsFFT2RD: FFT2RDParams[FixedPoint] = FFT2RDParams (
       rangeFFTParams = FFTParams.fixed(
         dataWidth = 12,
         twiddleWidth = 16,
@@ -138,7 +138,7 @@ object FFT2DspBlockAXI4 extends App
         minSRAMdepth = 8,
         binPoint = 10
       ),
-      fft2ControlParams  = FFT2ControlParams(rangeFFTSize = rangeFFTSize,
+      fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = rangeFFTSize,
                                             dopplerFFTSize = dopplerFFTSize,
                                             numTxs = numTxs,
                                             numRxs = numRxs,
@@ -172,6 +172,6 @@ object FFT2DspBlockAXI4 extends App
     )
   implicit val p: Parameters = Parameters.empty
 
-  val fft2Module = LazyModule(new AXI4StreamFFT2Block(paramsFFT2, beatBytes = 4) with AXI4FFT2StandaloneBlock)
+  val fft2Module = LazyModule(new AXI4StreamFFT2RDBlock(paramsFFT2RD, beatBytes = 4) with AXI4FFT2RDStandaloneBlock)
   chisel3.Driver.execute(args, ()=> fft2Module.module)
 }

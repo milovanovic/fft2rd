@@ -1,6 +1,6 @@
 package fft2rd
 
-case class FFT2ControlParams (
+case class FFT2RDControlParams (
   rangeFFTSize: Int = 1024,                       // implemented
   dopplerFFTSize: Int =  256,                     // implemented
   addressGenDir: Boolean = true,                  // not sure about this one

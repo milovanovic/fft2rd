@@ -13,16 +13,16 @@ import fft._
 import zeropadder._
 import utils._
 
-case class FFT2TSParams (
-  paramsFFT2        : FFT2Params[FixedPoint],
+case class FFT2RDTSParams (
+  paramsFFT2RD        : FFT2RDParams[FixedPoint],
   storeRawMemAddress: AddressSet,
   rawDataMuxAddress : AddressSet,
   totalData         : Int,
   beatBytes         : Int
 )
 
-//Note: Module AXI4StreamFFT2WithTestStructuresBlock can be used only when number of output nodes is equal to 1
-trait AXI4FFT2WithTestStructuresStandaloneBlock extends AXI4StreamFFT2WithTestStructuresBlock {
+//Note: Module AXI4StreamFFT2RDWithTestStructuresBlock can be used only when number of output nodes is equal to 1
+trait AXI4FFT2RDWithTestStructuresStandaloneBlock extends AXI4StreamFFT2RDWithTestStructuresBlock {
   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
 
   val ioMem = mem.map { m => {
@@ -41,11 +41,11 @@ trait AXI4FFT2WithTestStructuresStandaloneBlock extends AXI4StreamFFT2WithTestSt
     AXI4StreamToBundleBridge(AXI4StreamSlaveParameters()) := outMux.masterNode
   val out = InModuleBody { ioOutNode.makeIO() }
 
-  val nIn = params.paramsFFT2.fft2ControlParams.numRxs
+  val nIn = params.paramsFFT2RD.fft2ControlParams.numRxs
   val ins: Seq[ModuleValue[AXI4StreamBundle]] = for (i <- 0 until nIn) yield {
     implicit val valName = ValName(s"inIO_$i")
     val in = BundleBridgeSource[AXI4StreamBundle](() => AXI4StreamBundle(AXI4StreamBundleParameters(n = beatBytes)))
-    if (params.paramsFFT2.zeroPadderRangeParams != None) {
+    if (params.paramsFFT2RD.zeroPadderRangeParams != None) {
       zeroPadderRange.get.streamNode :=  BundleBridgeToAXI4Stream(AXI4StreamMasterPortParameters(AXI4StreamMasterParameters(n    = beatBytes))) := in
     }
     else {
@@ -56,23 +56,23 @@ trait AXI4FFT2WithTestStructuresStandaloneBlock extends AXI4StreamFFT2WithTestSt
   }
 }
 
-class AXI4StreamFFT2WithTestStructuresBlock(val params: FFT2TSParams, val beatBytes: Int) extends LazyModule()(Parameters.empty) {
+class AXI4StreamFFT2RDWithTestStructuresBlock(val params: FFT2RDTSParams, val beatBytes: Int) extends LazyModule()(Parameters.empty) {
   // number of chirps
-  val fft2Control = LazyModule(new AXI4StreamFFT2ControlBlock(params.paramsFFT2.fft2ControlParams, params.paramsFFT2.fft2ControlAddress, beatBytes = beatBytes))
-  val rangeFFT    = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2.rangeFFTParams, params.paramsFFT2.rangeFFTAddress, _beatBytes = beatBytes, configInterface = false))
-  val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2.dopplerFFTParams, params.paramsFFT2.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
-  val zeroPadderRange = if (params.paramsFFT2.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2.zeroPadderRangeParams.get, params.paramsFFT2.zeroPadderRangeAddress.get))) else None
-  val zeroPadderDoppler = if (params.paramsFFT2.zeroPadderDopplerParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2.zeroPadderDopplerParams.get, params.paramsFFT2.zeroPadderDopplerAddress.get))) else None
+  val fft2Control = LazyModule(new AXI4StreamFFT2RDControlBlock(params.paramsFFT2RD.fft2ControlParams, params.paramsFFT2RD.fft2ControlAddress, beatBytes = beatBytes))
+  val rangeFFT    = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2RD.rangeFFTParams, params.paramsFFT2RD.rangeFFTAddress, _beatBytes = beatBytes, configInterface = false))
+  val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2RD.dopplerFFTParams, params.paramsFFT2RD.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
+  val zeroPadderRange = if (params.paramsFFT2RD.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2RD.zeroPadderRangeParams.get, params.paramsFFT2RD.zeroPadderRangeAddress.get))) else None
+  val zeroPadderDoppler = if (params.paramsFFT2RD.zeroPadderDopplerParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2RD.zeroPadderDopplerParams.get, params.paramsFFT2RD.zeroPadderDopplerAddress.get))) else None
 
-  val rawDataSplit = Seq.fill(params.paramsFFT2.fft2ControlParams.numRxs)(LazyModule(new SplitterAND(beatBytes = params.beatBytes)))                // defined in dsputils
+  val rawDataSplit = Seq.fill(params.paramsFFT2RD.fft2ControlParams.numRxs)(LazyModule(new SplitterAND(beatBytes = params.beatBytes)))                // defined in dsputils
   val rawDataMux =  LazyModule(new AXI4StreamCustomMux(address = params.rawDataMuxAddress,  beatBytes = params.beatBytes)) // defined in dsputils
   // totalData needs to be equal to numTxs*rangeFFTsize*dopplerFFTSize
   val storeRawMem = LazyModule(new AXI4StreamDataStoringModule(address = params.storeRawMemAddress, beatBytes = params.beatBytes, totalData = params.totalData, triggerIn = true)) // defined in dsputils
-  val dopplerFFTWrapper = LazyModule(new AXI4StreamMultipleIdentityWrapper(4, params.paramsFFT2.fft2ControlParams.outputNodes)) // Todo: Move AXI4StreamMultipleIdentityWrapper to dsputils
+  val dopplerFFTWrapper = LazyModule(new AXI4StreamMultipleIdentityWrapper(4, params.paramsFFT2RD.fft2ControlParams.outputNodes)) // Todo: Move AXI4StreamMultipleIdentityWrapper to dsputils
   val outMux = LazyModule(new AXI4Stream2InputMux(beatBytes = beatBytes)) //LazyModule(new AXI4StreamSimpleMux(numStreams = 1, beatBytes = beatBytes))
 
-  for (i <- 0 until params.paramsFFT2.fft2ControlParams.numRxs) {
-    if (params.paramsFFT2.zeroPadderRangeParams != None) {
+  for (i <- 0 until params.paramsFFT2RD.fft2ControlParams.numRxs) {
+    if (params.paramsFFT2RD.zeroPadderRangeParams != None) {
       rawDataSplit(i).streamNode := AXI4StreamBuffer() := zeroPadderRange.get.streamNode
       rangeFFT.streamNode := AXI4StreamBuffer() := rawDataSplit(i).streamNode
       rawDataMux.streamNode := AXI4StreamBuffer() := rawDataSplit(i).streamNode
@@ -85,8 +85,8 @@ class AXI4StreamFFT2WithTestStructuresBlock(val params: FFT2TSParams, val beatBy
       fft2Control.streamNode := AXI4StreamBuffer() := rangeFFT.streamNode   // AXI4StreamBuffer() - maybe not necessary to have - to be checked
     }
   }
-  for (i <- 0 until params.paramsFFT2.fft2ControlParams.outputNodes) {
-    if (params.paramsFFT2.zeroPadderDopplerParams != None) {
+  for (i <- 0 until params.paramsFFT2RD.fft2ControlParams.outputNodes) {
+    if (params.paramsFFT2RD.zeroPadderDopplerParams != None) {
       dopplerFFT.streamNode  := AXI4StreamBuffer() := zeroPadderDoppler.get.streamNode
       dopplerFFTWrapper.streamNode(i) :=  AXI4StreamBuffer() := dopplerFFT.streamNode
       zeroPadderDoppler.get.streamNode := AXI4StreamBuffer() := fft2Control.streamNode
@@ -97,10 +97,10 @@ class AXI4StreamFFT2WithTestStructuresBlock(val params: FFT2TSParams, val beatBy
     }
   }
   var blocks = Seq(fft2Control, rangeFFT, dopplerFFT, rawDataMux, storeRawMem) // instead of lazy val, var is used
-  if (params.paramsFFT2.zeroPadderRangeParams != None) {
+  if (params.paramsFFT2RD.zeroPadderRangeParams != None) {
     blocks = blocks :+ zeroPadderRange.get
   }
-  if (params.paramsFFT2.zeroPadderDopplerParams != None) {
+  if (params.paramsFFT2RD.zeroPadderDopplerParams != None) {
     blocks = blocks :+ zeroPadderDoppler.get
   }
   //print(blocks.length)
@@ -121,10 +121,10 @@ class AXI4StreamFFT2WithTestStructuresBlock(val params: FFT2TSParams, val beatBy
   }
 }
 
-object FFT2WithTestStructuresDspBlockAXI4 extends App
+object FFT2RDWithTestStructuresDspBlockAXI4 extends App
 {
-  val paramsFFT2TS = FFT2TSParams(
-    paramsFFT2 = FFT2Params (
+  val paramsFFT2RDTS = FFT2RDTSParams(
+    paramsFFT2RD = FFT2RDParams (
       rangeFFTParams = FFTParams.fixed(
         dataWidth = 12,
         twiddleWidth = 16,
@@ -175,7 +175,7 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
                                       isDataComplex = true
                                     )
                                   ),
-      fft2ControlParams  = FFT2ControlParams(rangeFFTSize = 256, dopplerFFTSize = 32, numTxs = 3, numRxs = 4, outputNodes = 1, pingPong = false),
+      fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = 256, dopplerFFTSize = 32, numTxs = 3, numRxs = 4, outputNodes = 1, pingPong = false),
       fft2ControlAddress = AddressSet(0x00000, 0xFFF),
       rangeFFTAddress    = AddressSet(0x01000, 0xFFF),
       dopplerFFTAddress  = AddressSet(0x02000, 0xFFF),
@@ -189,7 +189,7 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
   )
   implicit val p: Parameters = Parameters.empty
 
-  val fft2Module = LazyModule(new AXI4StreamFFT2WithTestStructuresBlock(paramsFFT2TS, beatBytes = 4) with AXI4FFT2WithTestStructuresStandaloneBlock)
+  val fft2Module = LazyModule(new AXI4StreamFFT2RDWithTestStructuresBlock(paramsFFT2RDTS, beatBytes = 4) with AXI4FFT2RDWithTestStructuresStandaloneBlock)
   chisel3.Driver.execute(args, ()=> fft2Module.module)
 }
 
@@ -208,16 +208,16 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 // import zeropadder._
 // import dsputils._
 //
-// case class FFT2TSParams (
-//   paramsFFT2        : FFT2Params[FixedPoint],
+// case class FFT2RDTSParams (
+//   paramsFFT2RD        : FFT2RDParams[FixedPoint],
 //   storeRawMemAddress: AddressSet,
 //   rawDataMuxAddress : AddressSet,
 //   totalData         : Int,
 //   beatBytes         : Int
 // )
 //
-// //Note: Module AXI4StreamFFT2WithTestStructuresBlock can be used only when number of output nodes is equal to 1
-// trait AXI4FFT2WithTestStructuresStandaloneBlock extends AXI4StreamFFT2WithTestStructuresBlock {
+// //Note: Module AXI4StreamFFT2RDWithTestStructuresBlock can be used only when number of output nodes is equal to 1
+// trait AXI4FFT2RDWithTestStructuresStandaloneBlock extends AXI4StreamFFT2RDWithTestStructuresBlock {
 //   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
 //
 //   val ioMem = mem.map { m => {
@@ -236,11 +236,11 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //     AXI4StreamToBundleBridge(AXI4StreamSlaveParameters()) := outMux.masterNode
 //   val out = InModuleBody { ioOutNode.makeIO() }
 //
-//   val nIn = params.paramsFFT2.fft2ControlParams.numRxs
+//   val nIn = params.paramsFFT2RD.fft2ControlParams.numRxs
 //   val ins: Seq[ModuleValue[AXI4StreamBundle]] = for (i <- 0 until nIn) yield {
 //     implicit val valName = ValName(s"inIO_$i")
 //     val in = BundleBridgeSource[AXI4StreamBundle](() => AXI4StreamBundle(AXI4StreamBundleParameters(n = beatBytes)))
-//     if (params.paramsFFT2.zeroPadderRangeParams != None) {
+//     if (params.paramsFFT2RD.zeroPadderRangeParams != None) {
 //       zeroPadderRange.get.streamNode :=  BundleBridgeToAXI4Stream(AXI4StreamMasterPortParameters(AXI4StreamMasterParameters(n    = beatBytes))) := in
 //     }
 //     else {
@@ -251,23 +251,23 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //   }
 // }
 //
-// class AXI4StreamFFT2WithTestStructuresBlock(val params: FFT2TSParams, val beatBytes: Int) extends LazyModule()(Parameters.empty) {
+// class AXI4StreamFFT2RDWithTestStructuresBlock(val params: FFT2RDTSParams, val beatBytes: Int) extends LazyModule()(Parameters.empty) {
 //   // number of chirps
-//   val fft2Control = LazyModule(new AXI4StreamFFT2ControlBlock(params.paramsFFT2.fft2ControlParams, params.paramsFFT2.fft2ControlAddress, beatBytes = beatBytes))
-//   val rangeFFT    = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2.rangeFFTParams, params.paramsFFT2.rangeFFTAddress, _beatBytes = beatBytes, configInterface = false))
-//   val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2.dopplerFFTParams, params.paramsFFT2.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
-//   val zeroPadderRange = if (params.paramsFFT2.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2.zeroPadderRangeParams.get, params.paramsFFT2.zeroPadderRangeAddress.get))) else None
-//   val zeroPadderDoppler = if (params.paramsFFT2.zeroPadderDopplerParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2.zeroPadderDopplerParams.get, params.paramsFFT2.zeroPadderDopplerAddress.get))) else None
+//   val fft2Control = LazyModule(new AXI4StreamFFT2RDControlBlock(params.paramsFFT2RD.fft2ControlParams, params.paramsFFT2RD.fft2ControlAddress, beatBytes = beatBytes))
+//   val rangeFFT    = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2RD.rangeFFTParams, params.paramsFFT2RD.rangeFFTAddress, _beatBytes = beatBytes, configInterface = false))
+//   val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.paramsFFT2RD.dopplerFFTParams, params.paramsFFT2RD.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
+//   val zeroPadderRange = if (params.paramsFFT2RD.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2RD.zeroPadderRangeParams.get, params.paramsFFT2RD.zeroPadderRangeAddress.get))) else None
+//   val zeroPadderDoppler = if (params.paramsFFT2RD.zeroPadderDopplerParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.paramsFFT2RD.zeroPadderDopplerParams.get, params.paramsFFT2RD.zeroPadderDopplerAddress.get))) else None
 //
-//   val rawDataSplit = Seq.fill(params.paramsFFT2.fft2ControlParams.numRxs)(LazyModule(new SplitterAND(beatBytes = params.beatBytes)))                // defined in dsputils
+//   val rawDataSplit = Seq.fill(params.paramsFFT2RD.fft2ControlParams.numRxs)(LazyModule(new SplitterAND(beatBytes = params.beatBytes)))                // defined in dsputils
 //   val rawDataMux =  LazyModule(new AXI4StreamCustomMux(address = params.rawDataMuxAddress,  beatBytes = params.beatBytes)) // defined in dsputils
 //   // totalData needs to be equal to numTxs*rangeFFTsize*dopplerFFTSize
 //   val storeRawMem = LazyModule(new AXI4StreamDataStoringModule(address = params.storeRawMemAddress, beatBytes = params.beatBytes, totalData = params.totalData, triggerIn = true)) // defined in dsputils
-//   val dopplerFFTWrapper = LazyModule(new AXI4StreamMultipleIdentityWrapper(4, params.paramsFFT2.fft2ControlParams.outputNodes)) // Todo: Move AXI4StreamMultipleIdentityWrapper to dsputils
+//   val dopplerFFTWrapper = LazyModule(new AXI4StreamMultipleIdentityWrapper(4, params.paramsFFT2RD.fft2ControlParams.outputNodes)) // Todo: Move AXI4StreamMultipleIdentityWrapper to dsputils
 //   val outMux = LazyModule(new AXI4Stream2InputMux(beatBytes = beatBytes)) //LazyModule(new AXI4StreamSimpleMux(numStreams = 1, beatBytes = beatBytes))
 //
-//   for (i <- 0 until params.paramsFFT2.fft2ControlParams.numRxs) {
-//     if (params.paramsFFT2.zeroPadderRangeParams != None) {
+//   for (i <- 0 until params.paramsFFT2RD.fft2ControlParams.numRxs) {
+//     if (params.paramsFFT2RD.zeroPadderRangeParams != None) {
 //       rawDataSplit(i).streamNode := zeroPadderRange.get.streamNode
 //       rangeFFT.streamNode := rawDataSplit(i).streamNode
 //       rawDataMux.streamNode := rawDataSplit(i).streamNode
@@ -280,8 +280,8 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //       fft2Control.streamNode := rangeFFT.streamNode   // AXI4StreamBuffer() - maybe not necessary to have - to be checked
 //     }
 //   }
-//   for (i <- 0 until params.paramsFFT2.fft2ControlParams.outputNodes) {
-//     if (params.paramsFFT2.zeroPadderDopplerParams != None) {
+//   for (i <- 0 until params.paramsFFT2RD.fft2ControlParams.outputNodes) {
+//     if (params.paramsFFT2RD.zeroPadderDopplerParams != None) {
 //       dopplerFFT.streamNode  := zeroPadderDoppler.get.streamNode
 //       dopplerFFTWrapper.streamNode(i) := dopplerFFT.streamNode
 //       zeroPadderDoppler.get.streamNode := fft2Control.streamNode
@@ -292,10 +292,10 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //     }
 //   }
 //   var blocks = Seq(fft2Control, rangeFFT, dopplerFFT, rawDataMux, storeRawMem) // instead of lazy val, var is used
-//   if (params.paramsFFT2.zeroPadderRangeParams != None) {
+//   if (params.paramsFFT2RD.zeroPadderRangeParams != None) {
 //     blocks = blocks :+ zeroPadderRange.get
 //   }
-//   if (params.paramsFFT2.zeroPadderDopplerParams != None) {
+//   if (params.paramsFFT2RD.zeroPadderDopplerParams != None) {
 //     blocks = blocks :+ zeroPadderDoppler.get
 //   }
 //   //print(blocks.length)
@@ -316,10 +316,10 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //   }
 // }
 //
-// object FFT2WithTestStructuresDspBlockAXI4 extends App
+// object FFT2RDWithTestStructuresDspBlockAXI4 extends App
 // {
-//   val paramsFFT2TS = FFT2TSParams(
-//     paramsFFT2 = FFT2Params (
+//   val paramsFFT2RDTS = FFT2RDTSParams(
+//     paramsFFT2RD = FFT2RDParams (
 //       rangeFFTParams = FFTParams.fixed(
 //         dataWidth = 12,
 //         twiddleWidth = 16,
@@ -370,7 +370,7 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //                                       isDataComplex = true
 //                                     )
 //                                   ),
-//       fft2ControlParams  = FFT2ControlParams(rangeFFTSize = 256, dopplerFFTSize = 32, numTxs = 3, numRxs = 4, outputNodes = 1, pingPong = false),
+//       fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = 256, dopplerFFTSize = 32, numTxs = 3, numRxs = 4, outputNodes = 1, pingPong = false),
 //       fft2ControlAddress = AddressSet(0x00000, 0xFFF),
 //       rangeFFTAddress    = AddressSet(0x01000, 0xFFF),
 //       dopplerFFTAddress  = AddressSet(0x02000, 0xFFF),
@@ -384,6 +384,6 @@ object FFT2WithTestStructuresDspBlockAXI4 extends App
 //   )
 //   implicit val p: Parameters = Parameters.empty
 //
-//   val fft2Module = LazyModule(new AXI4StreamFFT2WithTestStructuresBlock(paramsFFT2TS, beatBytes = 4) with AXI4FFT2WithTestStructuresStandaloneBlock)
+//   val fft2Module = LazyModule(new AXI4StreamFFT2RDWithTestStructuresBlock(paramsFFT2RDTS, beatBytes = 4) with AXI4FFT2RDWithTestStructuresStandaloneBlock)
 //   chisel3.Driver.execute(args, ()=> fft2Module.module)
 // }

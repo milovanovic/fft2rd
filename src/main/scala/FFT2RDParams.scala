@@ -6,8 +6,8 @@ import freechips.rocketchip.diplomacy._
 import fft._
 import zeropadder._
 
-case class FFT2Params[T <: Data : Real: BinaryRepresentation] (
-  fft2ControlParams     : FFT2ControlParams  = FFT2ControlParams (
+case class FFT2RDParams[T <: Data : Real: BinaryRepresentation] (
+  fft2ControlParams     : FFT2RDControlParams  = FFT2RDControlParams (
                           rangeFFTSize = 1024 ,
                           dopplerFFTSize =  256,
                           addressGenDir = true,
