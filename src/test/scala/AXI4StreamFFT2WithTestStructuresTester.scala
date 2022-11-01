@@ -21,9 +21,9 @@ import scala.io.Source
 import dsptools.numbers._
 
 // Works ok when zeropadder is on on and when it is off
-class AXI4StreamFFT2WithTestStructuresBlockTester (
-  dut: AXI4StreamFFT2WithTestStructuresBlock with AXI4FFT2WithTestStructuresStandaloneBlock,
-  params: FFT2TSParams,
+class AXI4StreamFFT2RDWithTestStructuresBlockTester (
+  dut: AXI4StreamFFT2RDWithTestStructuresBlock with AXI4FFT2RDWithTestStructuresStandaloneBlock,
+  params: FFT2RDTSParams,
   inFileNameReal: String,
   inFileNameImag: String,
   outFileNameReal: String,
@@ -68,8 +68,8 @@ class AXI4StreamFFT2WithTestStructuresBlockTester (
 
   val inData = formAXI4StreamComplexData(inputDataReal.zip(inputDataImag).map { case(real, imag) => Complex(real.toInt, imag.toInt) }.toSeq, 16)     // form complex input data
   var expected = formAXI4StreamComplexData(outputDataReal.zip(outputDataImag).map { case(real, imag) => Complex(real.toInt, imag.toInt) }.toSeq, 16) // form complex output data
-  val numberOfLoops = params.paramsFFT2.fft2ControlParams.rangeFFTSize*params.paramsFFT2.fft2ControlParams.dopplerFFTSize*params.paramsFFT2.fft2ControlParams.numTxs
-  val totalOutData = numberOfLoops * params.paramsFFT2.fft2ControlParams.numRxs // this is all for number of outputNodes equal to 1
+  val numberOfLoops = params.paramsFFT2RD.fft2ControlParams.rangeFFTSize*params.paramsFFT2RD.fft2ControlParams.dopplerFFTSize*params.paramsFFT2RD.fft2ControlParams.numTxs
+  val totalOutData = numberOfLoops * params.paramsFFT2RD.fft2ControlParams.numRxs // this is all for number of outputNodes equal to 1
 
   var inValid = 0
   var cntIn = 0
@@ -112,7 +112,7 @@ class AXI4StreamFFT2WithTestStructuresBlockTester (
   var cntRawData = 0
   val expectedRawData = inData.take(numberOfLoops)
 
-  if (params.paramsFFT2.fft2ControlParams.outputNodes == 1) {
+  if (params.paramsFFT2RD.fft2ControlParams.outputNodes == 1) {
      while (cntValid < totalOutData) {
       outReady = Random.nextInt(2)
       poke(dut.out.ready, outReady)
@@ -213,7 +213,7 @@ class AXI4StreamFFT2WithTestStructuresBlockTester (
     }
   }*/
 }
-class AXI4StreamFFT2WithTestStructuresSpec extends FlatSpec with Matchers {
+class AXI4StreamFFT2RDWithTestStructuresSpec extends FlatSpec with Matchers {
 
   val numOfIterations = 4
   val rangeFFTSize = 256
@@ -231,8 +231,8 @@ class AXI4StreamFFT2WithTestStructuresSpec extends FlatSpec with Matchers {
       val outFileNameReal: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataOut$readDir.txt" // fft2rd
       val outFileNameImag: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataOut$readDir.txt" // fft2rd
 
-      val paramsFFT2TS = FFT2TSParams(
-        paramsFFT2 = FFT2Params (
+      val paramsFFT2RDTS = FFT2RDTSParams(
+        paramsFFT2RD = FFT2RDParams (
           rangeFFTParams = FFTParams.fixed(
             dataWidth = 12,
             twiddleWidth = 16,
@@ -265,7 +265,7 @@ class AXI4StreamFFT2WithTestStructuresSpec extends FlatSpec with Matchers {
             minSRAMdepth = 8,
             binPoint = 10
           ),
-          fft2ControlParams  = FFT2ControlParams(rangeFFTSize = rangeFFTSize,
+          fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = rangeFFTSize,
                                                 dopplerFFTSize = dopplerFFTSize,
                                                 numTxs = numTxs,
                                                 numRxs = numRxs,
@@ -303,15 +303,15 @@ class AXI4StreamFFT2WithTestStructuresSpec extends FlatSpec with Matchers {
         storeRawMemAddress = AddressSet(0x6000, 0xFF)
       )
       val beatBytes = 4
-      val testModule = LazyModule(new AXI4StreamFFT2WithTestStructuresBlock(paramsFFT2TS, beatBytes) with AXI4FFT2WithTestStructuresStandaloneBlock)
+      val testModule = LazyModule(new AXI4StreamFFT2RDWithTestStructuresBlock(paramsFFT2RDTS, beatBytes) with AXI4FFT2RDWithTestStructuresStandaloneBlock)
       it should f"test Range-Doppler 2D-FFT module with test structures, results are compared with Python model of 2D-FFT design - iteration $i, with read direction equal to $readDir," in {
         chisel3.iotesters.Driver.execute(Array("-fiwv",
               "--backend-name", "verilator"
               //"--tr-write-vcd",
               ), () => testModule.module) {
-          c => new AXI4StreamFFT2WithTestStructuresBlockTester(dut = testModule,
+          c => new AXI4StreamFFT2RDWithTestStructuresBlockTester(dut = testModule,
                                               beatBytes = 4,
-                                              params = paramsFFT2TS,
+                                              params = paramsFFT2RDTS,
                                               inFileNameReal = inFileNameReal,
                                               inFileNameImag = inFileNameImag,
                                               outFileNameReal = outFileNameReal,

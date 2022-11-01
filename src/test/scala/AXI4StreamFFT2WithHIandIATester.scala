@@ -22,9 +22,9 @@
 //
 //
 // // Works ok when zeropadder is on on and when it is off
-// class AXI4StreamFFT2FT2WithIAandHIBlockTester (
-//   dut: AXI4StreamFFT2WithIAandHI[FixedPoint] with AXI4FFT2WithIAandHIStandaloneBlock,
-//   params: FFT2Params[FixedPoint],
+// class AXI4StreamFFT2RDFT2WithIAandHIBlockTester (
+//   dut: AXI4StreamFFT2RDWithIAandHI[FixedPoint] with AXI4FFT2RDWithIAandHIStandaloneBlock,
+//   params: FFT2RDParams[FixedPoint],
 //   inFileNameComplex: String,
 //   outFileNameComplex: String,
 //   beatBytes: Int = 4,
@@ -130,7 +130,7 @@
 //   }
 //   step (20)
 // }
-// class AXI4StreamFFT2WithIAandHIBlockSpec extends FlatSpec with Matchers {
+// class AXI4StreamFFT2RDWithIAandHIBlockSpec extends FlatSpec with Matchers {
 //
 //   val numOfIterations = 3
 //   val rangeFFTSize = 256
@@ -146,7 +146,7 @@
 //       val inFileNameComplex : String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/complexDataInHexWithInputAdapter$readDir.txt"
 //       val outFileNameComplex: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/complexDataOutHexWithHeaderInserter$readDir.txt"
 //
-//       val paramsFFT2 : FFT2Params[FixedPoint] = FFT2Params (
+//       val paramsFFT2RD : FFT2RDParams[FixedPoint] = FFT2RDParams (
 //         rangeFFTParams = FFTParams.fixed(
 //           dataWidth = 12,
 //           twiddleWidth = 16,
@@ -179,7 +179,7 @@
 //           minSRAMdepth = 64,
 //           binPoint = 10
 //         ),
-//         fft2ControlParams  = FFT2ControlParams(rangeFFTSize = rangeFFTSize,
+//         fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = rangeFFTSize,
 //                                               dopplerFFTSize = dopplerFFTSize,
 //                                               numTxs = numTxs,
 //                                               numRxs = numRxs,
@@ -212,12 +212,12 @@
 //         dopplerFFTAddress  = AddressSet(0x02000, 0xFFF)
 //       )
 //       val beatBytes = 4
-//       val testModule = LazyModule(new AXI4StreamFFT2WithIAandHI(paramsFFT2, false, AddressSet(0x05000, 0xFFF), beatBytes) with AXI4FFT2WithIAandHIStandaloneBlock)
+//       val testModule = LazyModule(new AXI4StreamFFT2RDWithIAandHI(paramsFFT2RD, false, AddressSet(0x05000, 0xFFF), beatBytes) with AXI4FFT2RDWithIAandHIStandaloneBlock)
 //       it should f"test Range-Doppler 2D-FFT module, results are compared with Python model of 2D-FFT design - iteration $i, with read direction equal to $readDir," in {
 //         chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-//           c => new AXI4StreamFFT2FT2WithIAandHIBlockTester(dut = testModule,
+//           c => new AXI4StreamFFT2RDFT2WithIAandHIBlockTester(dut = testModule,
 //                                               beatBytes = 4,
-//                                               params = paramsFFT2,
+//                                               params = paramsFFT2RD,
 //                                               inFileNameComplex = inFileNameComplex,
 //                                               outFileNameComplex = outFileNameComplex,
 //                                               silentFail  = false)

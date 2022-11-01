@@ -15,9 +15,9 @@ import breeze.signal._
 import breeze.linalg._
 import scala.util.{Random}
 
-class FFT2ControlWithPingPongTester (
-  dut: AXI4StreamFFT2ControlBlock with AXI4FFT2ControlStandaloneBlock,
-  params: FFT2ControlParams,
+class FFT2RDControlWithPingPongTester (
+  dut: AXI4StreamFFT2RDControlBlock with AXI4FFT2RDControlStandaloneBlock,
+  params: FFT2RDControlParams,
   beatBytes: Int = 4,
 ) extends PeekPokeTester(dut.module) with AXI4MasterModel {
 
@@ -159,7 +159,7 @@ class FFT2ControlWithPingPongTester (
 //println("Expected data:")
 //println(expected.head.toString)
 
-class FFT2ControlWithPingPongSpec extends FlatSpec with Matchers {
+class FFT2RDControlWithPingPongSpec extends FlatSpec with Matchers {
   val beatBytes = 4
   implicit val p: Parameters = Parameters.empty
 
@@ -171,7 +171,7 @@ class FFT2ControlWithPingPongSpec extends FlatSpec with Matchers {
             if (outputNodes == 1) {
               for (readXYZorXZY <- Seq(true)) {
                 it should f"work for rangeFFTSize = $rangeFFTSize, dopplerFFTSize = $dopplerFFTSize, numRxs = $numRxs, numTxs = $numTxs, readXYZorXZY = $readXYZorXZY, outputNodes is equal to $outputNodes, with ping-pong" in {
-                  val paramsFFT2Control: FFT2ControlParams = FFT2ControlParams(
+                  val paramsFFT2RDControl: FFT2RDControlParams = FFT2RDControlParams(
                     rangeFFTSize = rangeFFTSize,
                     dopplerFFTSize = dopplerFFTSize,
                     pingPong = true,
@@ -179,20 +179,20 @@ class FFT2ControlWithPingPongSpec extends FlatSpec with Matchers {
                     numTxs = numTxs,
                     outputNodes = outputNodes,
                     readXYZorXZY = Some(readXYZorXZY))
-                  val testModule = LazyModule(new AXI4StreamFFT2ControlBlock(
-                                                    paramsFFT2Control,
+                  val testModule = LazyModule(new AXI4StreamFFT2RDControlBlock(
+                                                    paramsFFT2RDControl,
                                                     AddressSet(0x00000, 0xFF),
-                                                    beatBytes = 4) with AXI4FFT2ControlStandaloneBlock)
+                                                    beatBytes = 4) with AXI4FFT2RDControlStandaloneBlock)
                   chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-                          c => new FFT2ControlWithPingPongTester(dut = testModule,
+                          c => new FFT2RDControlWithPingPongTester(dut = testModule,
                                     beatBytes = 4,
-                                    params = paramsFFT2Control)}  should be (true)
+                                    params = paramsFFT2RDControl)}  should be (true)
                 }
               }
             }
             else {
               it should f"work for rangeFFTSize = $rangeFFTSize, dopplerFFTSize = $dopplerFFTSize, numRxs = $numRxs, numTxs = $numTxs, outputNodes is equal to $outputNodes, with ping-pong ($index) " in {
-                val paramsFFT2Control: FFT2ControlParams = FFT2ControlParams(
+                val paramsFFT2RDControl: FFT2RDControlParams = FFT2RDControlParams(
                   rangeFFTSize = rangeFFTSize,
                   dopplerFFTSize = dopplerFFTSize,
                   pingPong = true,
@@ -200,14 +200,14 @@ class FFT2ControlWithPingPongSpec extends FlatSpec with Matchers {
                   numTxs = numTxs,
                   outputNodes = outputNodes,
                   readXYZorXZY = None)
-                val testModule = LazyModule(new AXI4StreamFFT2ControlBlock(
-                                                  paramsFFT2Control,
+                val testModule = LazyModule(new AXI4StreamFFT2RDControlBlock(
+                                                  paramsFFT2RDControl,
                                                   AddressSet(0x00000, 0xFF),
-                                                  beatBytes = 4) with AXI4FFT2ControlStandaloneBlock)
+                                                  beatBytes = 4) with AXI4FFT2RDControlStandaloneBlock)
                 chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-                        c => new FFT2ControlWithPingPongTester(dut = testModule,
+                        c => new FFT2RDControlWithPingPongTester(dut = testModule,
                                   beatBytes = 4,
-                                  params = paramsFFT2Control)}  should be (true)
+                                  params = paramsFFT2RDControl)}  should be (true)
               }
             }
           }

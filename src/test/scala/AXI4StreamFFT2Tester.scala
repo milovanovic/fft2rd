@@ -10,6 +10,7 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.Parameters
 
+import org.scalatest.{FlatSpec, Matchers}
 import chisel3.iotesters.PeekPokeTester
 //import org.scalatest.flatspec.AnyFlatSpec
 //import org.scalatest.matchers.should.Matchers
@@ -19,9 +20,9 @@ import scala.util.{Random}
 import scala.io.Source
 import dsptools.numbers._
 
-class AXI4StreamFFT2BlockTester (
-  dut: AXI4StreamFFT2Block[FixedPoint] with AXI4FFT2StandaloneBlock,
-  params: FFT2Params[FixedPoint],
+class AXI4StreamFFT2RDBlockTester (
+  dut: AXI4StreamFFT2RDBlock[FixedPoint] with AXI4FFT2RDStandaloneBlock,
+  params: FFT2RDParams[FixedPoint],
   inFileNameReal: String,
   inFileNameImag: String,
   outFileNameReal: String,
@@ -177,7 +178,7 @@ class AXI4StreamFFT2BlockTester (
     step(1)
   }
 }
-class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
+class AXI4StreamFFT2RDBlockSpec extends FlatSpec with Matchers {
 
   val numOfIterations = 1
   val rangeFFTSize = 256
@@ -191,12 +192,12 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
   for (i <-0 until numOfIterations) {
     for (dir <- Seq(false)) {//, false)) {
       var readDir = if (dir) 1 else 0
-      val inFileNameReal : String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataIn$readDir.txt"  // fft2rd
-      val inFileNameImag : String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataIn$readDir.txt"
-      val outFileNameReal: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd
-      val outFileNameImag: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd
+      val inFileNameReal : String = f"./python/gen_data_dir/realDataIn$readDir.txt" //f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataIn$readDir.txt"  // fft2rd
+      val inFileNameImag : String = f"./python/gen_data_dir/imagDataIn$readDir.txt" //f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataIn$readDir.txt"
+      val outFileNameReal: String = f"./python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd//f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd
+      val outFileNameImag: String = f"./python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" //f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd
 
-      val paramsFFT2 : FFT2Params[FixedPoint] = FFT2Params (
+      val paramsFFT2RD : FFT2RDParams[FixedPoint] = FFT2RDParams (
         rangeFFTParams = FFTParams.fixed(
           dataWidth = 12,
           twiddleWidth = 16,
@@ -229,7 +230,7 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
           minSRAMdepth = 8,
           binPoint = 10
         ),
-        fft2ControlParams  = FFT2ControlParams(rangeFFTSize = rangeFFTSize,
+        fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = rangeFFTSize,
                                               dopplerFFTSize = dopplerFFTSize,
                                               numTxs = numTxs,
                                               numRxs = numRxs,
@@ -262,12 +263,12 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
         dopplerFFTAddress  = AddressSet(0x02000, 0xFFF)
       )
       val beatBytes = 4
-      val testModule = LazyModule(new AXI4StreamFFT2Block(paramsFFT2, beatBytes) with AXI4FFT2StandaloneBlock)
+      val testModule = LazyModule(new AXI4StreamFFT2RDBlock(paramsFFT2RD, beatBytes) with AXI4FFT2RDStandaloneBlock)
       it should f"test Range-Doppler 2D-FFT module, results are compared with Python model of 2D-FFT design - iteration $i, with read direction equal to $readDir," in {
         chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-          c => new AXI4StreamFFT2BlockTester(dut = testModule,
+          c => new AXI4StreamFFT2RDBlockTester(dut = testModule,
                                               beatBytes = 4,
-                                              params = paramsFFT2,
+                                              params = paramsFFT2RD,
                                               inFileNameReal = inFileNameReal,
                                               inFileNameImag = inFileNameImag,
                                               outFileNameReal = outFileNameReal,
@@ -302,9 +303,9 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
 //
 //
 // // Works ok when zeropadder is on on and when it is off
-// class AXI4StreamFFT2BlockTester (
-//   dut: AXI4StreamFFT2Block[FixedPoint] with AXI4FFT2StandaloneBlock,
-//   params: FFT2Params[FixedPoint],
+// class AXI4StreamFFT2RDBlockTester (
+//   dut: AXI4StreamFFT2RDBlock[FixedPoint] with AXI4FFT2RDStandaloneBlock,
+//   params: FFT2RDParams[FixedPoint],
 //   inFileNameReal: String,
 //   inFileNameImag: String,
 //   outFileNameReal: String,
@@ -469,7 +470,7 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
 //     }
 //   }
 // }
-// class AXI4StreamFFT2BlockSpec extends AnyFlatSpec with Matchers {
+// class AXI4StreamFFT2RDBlockSpec extends AnyFlatSpec with Matchers {
 //
 //   val numOfIterations = 4
 //   val rangeFFTSize = 256
@@ -487,7 +488,7 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
 //       val outFileNameReal: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataOut$readDir.txt" // fft2rd
 //       val outFileNameImag: String = f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataOut$readDir.txt" // fft2rd
 //
-//       val paramsFFT2 : FFT2Params[FixedPoint] = FFT2Params (
+//       val paramsFFT2RD : FFT2RDParams[FixedPoint] = FFT2RDParams (
 //         rangeFFTParams = FFTParams.fixed(
 //           dataWidth = 12,
 //           twiddleWidth = 16,
@@ -520,7 +521,7 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
 //           minSRAMdepth = 8,
 //           binPoint = 10
 //         ),
-//         fft2ControlParams  = FFT2ControlParams(rangeFFTSize = rangeFFTSize,
+//         fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = rangeFFTSize,
 //                                               dopplerFFTSize = dopplerFFTSize,
 //                                               numTxs = numTxs,
 //                                               numRxs = numRxs,
@@ -553,12 +554,12 @@ class AXI4StreamFFT2BlockSpec extends FlatSpec with Matchers {
 //         dopplerFFTAddress  = AddressSet(0x02000, 0xFFF)
 //       )
 //       val beatBytes = 4
-//       val testModule = LazyModule(new AXI4StreamFFT2Block(paramsFFT2, beatBytes) with AXI4FFT2StandaloneBlock)
+//       val testModule = LazyModule(new AXI4StreamFFT2RDBlock(paramsFFT2RD, beatBytes) with AXI4FFT2RDStandaloneBlock)
 //       it should f"test Range-Doppler 2D-FFT module, results are compared with Python model of 2D-FFT design - iteration $i, with read direction equal to $readDir," in {
 //         chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-//           c => new AXI4StreamFFT2BlockTester(dut = testModule,
+//           c => new AXI4StreamFFT2RDBlockTester(dut = testModule,
 //                                               beatBytes = 4,
-//                                               params = paramsFFT2,
+//                                               params = paramsFFT2RD,
 //                                               inFileNameReal = inFileNameReal,
 //                                               inFileNameImag = inFileNameImag,
 //                                               outFileNameReal = outFileNameReal,
