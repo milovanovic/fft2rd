@@ -37,19 +37,24 @@ val commonSettings = Seq(
     Resolver.sonatypeRepo("releases")
   ),
   libraryDependencies ++= Seq(
+    "com.github.haifengl" %% "smile-scala" % "2.6.0",
     "org.scalanlp" %% "breeze-viz" % "0.13.2",
     "edu.berkeley.cs" %% "rocket-dsptools" % "1.2-SNAPSHOT"
   )
 )
 
+lazy val utils = (project in file("generators/utils"))
+  .settings(commonSettings: _*)
+
 lazy val `sdf-fft` = (project in file("generators/sdf-fft"))
   .settings(commonSettings: _*)
 
 lazy val zeropadder = (project in file("generators/zeropadder"))
+  .dependsOn(utils)
   .settings(commonSettings: _*)
 
 lazy val fft2rd = (project in file("."))
-  .dependsOn(`sdf-fft`, zeropadder)
+  .dependsOn(`sdf-fft`, zeropadder, utils)
   .settings(commonSettings: _*)
 
 scalacOptions += "-Ywarn-unused-import"
