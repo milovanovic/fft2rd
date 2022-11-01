@@ -7,8 +7,9 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.Parameters
 
 import chisel3.iotesters.PeekPokeTester
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+//import org.scalatest.flatspec.AnyFlatSpec
+//import org.scalatest.matchers.should.Matchers
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.{Random}
 
@@ -71,7 +72,7 @@ class AXI4StreamAdapter1to4Tester (
   step (100)
 }
 
-class AXI4StreamAdapter1to4Spec extends AnyFlatSpec with Matchers {
+class AXI4StreamAdapter1to4Spec extends FlatSpec with Matchers {
   val beatBytes = 4
   implicit val p: Parameters = Parameters.empty
 

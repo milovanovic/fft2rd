@@ -11,8 +11,9 @@
 // import freechips.rocketchip.config.Parameters
 //
 // import chisel3.iotesters.PeekPokeTester
-// import org.scalatest.flatspec.AnyFlatSpec
-// import org.scalatest.matchers.should.Matchers
+//// import org.scalatest.flatspec.AnyFlatSpec
+//// import org.scalatest.matchers.should.Matchers
+//import org.scalatest.{FlatSpec, Matchers}
 //
 // import breeze.math.Complex
 // import scala.util.{Random}
@@ -129,7 +130,7 @@
 //   }
 //   step (20)
 // }
-// class AXI4StreamFFT2WithIAandHIBlockSpec extends AnyFlatSpec with Matchers {
+// class AXI4StreamFFT2WithIAandHIBlockSpec extends FlatSpec with Matchers {
 //
 //   val numOfIterations = 3
 //   val rangeFFTSize = 256
