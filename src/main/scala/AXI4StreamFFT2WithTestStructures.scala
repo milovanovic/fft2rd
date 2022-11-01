@@ -11,7 +11,7 @@ import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import fft._
 import zeropadder._
-import dsputils._
+import utils._
 
 case class FFT2TSParams (
   paramsFFT2        : FFT2Params[FixedPoint],
