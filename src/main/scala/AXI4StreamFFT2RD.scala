@@ -102,8 +102,9 @@ object FFT2RDDspBlockAXI4 extends App
 {
   val rangeFFTSize = 256
   val dopplerFFTSize = 32
-  val numTxs = 3
+  val numTxs = 2
   val numRxs = 4
+  val outputNodes = 8
 
   val paramsFFT2RD: FFT2RDParams[FixedPoint] = FFT2RDParams (
       rangeFFTParams = FFTParams.fixed(
@@ -142,7 +143,7 @@ object FFT2RDDspBlockAXI4 extends App
                                             dopplerFFTSize = dopplerFFTSize,
                                             numTxs = numTxs,
                                             numRxs = numRxs,
-                                            outputNodes = 1,
+                                            outputNodes = outputNodes,
                                             pingPong = false,
                                             readXYZorXZY = Some(false)),
       // zeropadder parameters
@@ -150,7 +151,7 @@ object FFT2RDDspBlockAXI4 extends App
                                   proto = FixedPoint(16.W, 10.BP),
                                   packetSizeStart = 256,
                                   packetSizeEnd  = 256,       // range FFT size
-                                  numberOfPackets = 32*3,     // dopplerFFTSize * numTxs
+                                  numberOfPackets = (dopplerFFTSize*numTxs),     // dopplerFFTSize * numTxs
                                   useQueue = false,
                                   isDataComplex = true
                                 )
@@ -159,7 +160,7 @@ object FFT2RDDspBlockAXI4 extends App
                                   proto = FixedPoint(16.W, 10.BP),
                                   packetSizeStart = 32,
                                   packetSizeEnd  = 32,
-                                  numberOfPackets = 256*3*4,  // this highly depends on number of outputNodes!, if it is equal to 1 then then it is rangeFFTSize * numTxs * numRxs
+                                  numberOfPackets = (rangeFFTSize*numTxs*numRxs)/outputNodes,  // this highly depends on number of outputNodes!, if it is equal to 1 then then it is rangeFFTSize * numTxs * numRxs
                                   useQueue = false,
                                   isDataComplex = true
                                 )
