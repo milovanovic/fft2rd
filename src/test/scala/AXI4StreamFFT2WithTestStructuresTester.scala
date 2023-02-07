@@ -11,9 +11,9 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.Parameters
 
 import chisel3.iotesters.PeekPokeTester
-import org.scalatest.{FlatSpec, Matchers}
-//import org.scalatest.flatspec.AnyFlatSpec
-//import org.scalatest.matchers.should.Matchers
+//import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import breeze.math.Complex
 import scala.util.{Random}
@@ -136,7 +136,7 @@ class AXI4StreamFFT2RDWithTestStructuresBlockTester (
       if (peek(dut.out.ready) == BigInt(1) && peek(dut.out.valid) == BigInt(1)) {
         peekedVal = peek(dut.out.bits.data)
         if (cntRawData == 0) {
-          println(peekedVal.toString)
+         // println(peekedVal.toString)
         }
         assert(peekedVal.toInt == expectedRawData(cntRawData))
         if (peekedVal.toInt == expectedRawData(cntRawData)) {
@@ -213,7 +213,7 @@ class AXI4StreamFFT2RDWithTestStructuresBlockTester (
     }
   }*/
 }
-class AXI4StreamFFT2RDWithTestStructuresSpec extends FlatSpec with Matchers {
+class AXI4StreamFFT2RDWithTestStructuresSpec extends AnyFlatSpec with Matchers {
 
   val numOfIterations = 4
   val rangeFFTSize = 256

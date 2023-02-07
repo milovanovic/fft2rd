@@ -7,9 +7,9 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.Parameters
 
 import chisel3.iotesters.PeekPokeTester
-//import org.scalatest.flatspec.AnyFlatSpec
-//import org.scalatest.matchers.should.Matchers
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+//import org.scalatest.{FlatSpec, Matchers}
 
 import breeze.signal._
 import breeze.linalg._
@@ -105,9 +105,9 @@ class FFT2RDControlWithPingPongTester (
   println(expectedFull(0).toString)
   println(expectedFull(1).toString)
 
-  println("Expected data are:")
-  expectedFull.foreach { c => println(c.toString) }
-  println("end")
+  //println("Expected data are:")
+  //expectedFull.foreach { c => println(c.toString) }
+  //println("end")
 
   while (!expectedFull.isEmpty) {
     if (cntInLoop < 2) {
@@ -159,7 +159,7 @@ class FFT2RDControlWithPingPongTester (
 //println("Expected data:")
 //println(expected.head.toString)
 
-class FFT2RDControlWithPingPongSpec extends FlatSpec with Matchers {
+class FFT2RDControlWithPingPongSpec extends AnyFlatSpec with Matchers {
   val beatBytes = 4
   implicit val p: Parameters = Parameters.empty
 

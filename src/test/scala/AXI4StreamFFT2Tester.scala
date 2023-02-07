@@ -10,10 +10,9 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.Parameters
 
-import org.scalatest.{FlatSpec, Matchers}
 import chisel3.iotesters.PeekPokeTester
-//import org.scalatest.flatspec.AnyFlatSpec
-//import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import breeze.math.Complex
 import scala.util.{Random}
@@ -116,7 +115,7 @@ class AXI4StreamFFT2RDBlockTester (
         assert(peekedVal.toInt == expected(cntValid))
         if (peekedVal.toInt == expected(cntValid)) {
           cntValid = cntValid + 1
-          println(cntValid.toString)
+          //println(cntValid.toString)
         }
         if (cntValid >= (totalOutData - params.fft2ControlParams.outputNodes + 1)) {
           expect(out.bits.last, 1)
@@ -178,7 +177,7 @@ class AXI4StreamFFT2RDBlockTester (
     step(1)
   }
 }
-class AXI4StreamFFT2RDBlockSpec extends FlatSpec with Matchers {
+class AXI4StreamFFT2RDBlockSpec extends AnyFlatSpec with Matchers {
 
   val numOfIterations = 1
   val rangeFFTSize = 256
@@ -192,10 +191,10 @@ class AXI4StreamFFT2RDBlockSpec extends FlatSpec with Matchers {
   for (i <-0 until numOfIterations) {
     for (dir <- Seq(false)) {//, false)) {
       var readDir = if (dir) 1 else 0
-      val inFileNameReal : String = f"./python/gen_data_dir/realDataIn$readDir.txt" //f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataIn$readDir.txt"  // fft2rd
-      val inFileNameImag : String = f"./python/gen_data_dir/imagDataIn$readDir.txt" //f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataIn$readDir.txt"
-      val outFileNameReal: String = f"./python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd//f"./generators/dsp-blocks/fft2/python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd
-      val outFileNameImag: String = f"./python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" //f"./generators/dsp-blocks/fft2/python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt" // fft2rd
+      val inFileNameReal : String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/realDataIn$readDir.txt"
+      val inFileNameImag : String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/imagDataIn$readDir.txt"
+      val outFileNameReal: String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt"
+      val outFileNameImag: String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt"
 
       val paramsFFT2RD : FFT2RDParams[FixedPoint] = FFT2RDParams (
         rangeFFTParams = FFTParams.fixed(

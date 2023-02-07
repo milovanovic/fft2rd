@@ -7,9 +7,8 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.config.Parameters
 
 import chisel3.iotesters.PeekPokeTester
-//import org.scalatest.flatspec.AnyFlatSpec
-//import org.scalatest.matchers.should.Matchers
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import breeze.signal._
 import breeze.linalg._
@@ -144,7 +143,7 @@ class FFT2RDControlTester (
 //println("Expected data:")
 //println(expected.head.toString)
 
-class AXI4StreamFFT2RDControlBlock_Spec extends FlatSpec with Matchers {
+class AXI4StreamFFT2RDControlBlock_Spec extends AnyFlatSpec with Matchers {
   val beatBytes = 4
   implicit val p: Parameters = Parameters.empty
 

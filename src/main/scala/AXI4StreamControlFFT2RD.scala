@@ -9,6 +9,7 @@ import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 trait AXI4FFT2RDControlStandaloneBlock extends AXI4StreamFFT2RDControlBlock {
   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
@@ -478,5 +479,6 @@ object FFT2RDControlDspBlockAXI4 extends App
   implicit val p: Parameters = Parameters.empty
 
   val fft2Module = LazyModule(new AXI4StreamFFT2RDControlBlock(paramsFFT2RDControl, AddressSet(0x00000, 0xFF), beatBytes = 4) with AXI4FFT2RDControlStandaloneBlock)
-  chisel3.Driver.execute(args, ()=> fft2Module.module)
+  (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => fft2Module.module)))
+
 }

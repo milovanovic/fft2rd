@@ -9,6 +9,8 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+
 import fft._
 import zeropadder._
 import utils._
@@ -190,7 +192,7 @@ object FFT2RDWithTestStructuresDspBlockAXI4 extends App
   implicit val p: Parameters = Parameters.empty
 
   val fft2Module = LazyModule(new AXI4StreamFFT2RDWithTestStructuresBlock(paramsFFT2RDTS, beatBytes = 4) with AXI4FFT2RDWithTestStructuresStandaloneBlock)
-  chisel3.Driver.execute(args, ()=> fft2Module.module)
+  (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => fft2Module.module)))
 }
 
 // package fft2
