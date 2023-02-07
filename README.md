@@ -4,7 +4,7 @@ A Range Doppler FFT Chisel Generator
 
 ## Overview
 
-Be sure that chipyard uses the newest version of rocket-dsp-utils tool!
+Be sure that chipyard uses the newest version of rocket-dsp-utils tool! This is important becacuse of the ShiftRegisterMem object.
 Work in progress.
 
 ### TODO:
