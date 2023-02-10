@@ -16,7 +16,7 @@ case class FFT2RDParams[T <: Data : Real: BinaryRepresentation] (
                           numRxs = 4,
                           numTxs = 3
                         ),
-  zeroPadderRangeParams   : Option[ZeroPadderParams[T]] = None, // if parameters are None then do not add zerropadder module
+  zeroPadderRangeParams   : Option[ZeroPadderParams[T]] = None,
   zeroPadderDopplerParams : Option[ZeroPadderParams[T]] = None,
   winRangeParams          : Option[WindowingParams[T]] = None,
   winDopplerParams        : Option[WindowingParams[T]] = None,
@@ -27,6 +27,8 @@ case class FFT2RDParams[T <: Data : Real: BinaryRepresentation] (
   dopplerFFTAddress       : AddressSet,
   zeroPadderRangeAddress  : Option[AddressSet] = None,
   zeroPadderDopplerAddress: Option[AddressSet] = None,
-  winRangeAddress         : Option[AddressSet] = None, // can be useful for disabling windowing
-  winDopplerAddress       : Option[AddressSet] = None  // can be useful for disabling windowing
+  winRangeAddress         : Option[AddressSet] = None, // csr
+  winDopplerAddress       : Option[AddressSet] = None, // csr
+  winRangeRAMAddress      : Option[AddressSet] = None,
+  winDopplerRAMAddress    : Option[AddressSet] = None
 )

@@ -10,6 +10,7 @@ import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import fft._
+import windowing._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import zeropadder._
 
@@ -42,7 +43,12 @@ trait AXI4FFT2RDStandaloneBlock extends AXI4StreamFFT2RDBlock[FixedPoint] {
       zeroPadderRange.get.streamNode :=  BundleBridgeToAXI4Stream(AXI4StreamMasterPortParameters(AXI4StreamMasterParameters(n    = beatBytes))) := in
     }
     else {
-      rangeFFT.streamNode := BundleBridgeToAXI4Stream(AXI4StreamMasterPortParameters(AXI4StreamMasterParameters(n = beatBytes))) := in
+      if (params.winRangeParams != None) {
+        windowingRange.get.streamNode :=  BundleBridgeToAXI4Stream(AXI4StreamMasterPortParameters(AXI4StreamMasterParameters(n    = beatBytes))) := in
+      }
+      else {
+        rangeFFT.streamNode := BundleBridgeToAXI4Stream(AXI4StreamMasterPortParameters(AXI4StreamMasterParameters(n = beatBytes))) := in
+      }
     }
 
     InModuleBody { in.makeIO() }
@@ -56,25 +62,47 @@ class AXI4StreamFFT2RDBlock [T <: Data : Real: BinaryRepresentation] (val params
   val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.dopplerFFTParams, params.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
   val zeroPadderRange = if (params.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.zeroPadderRangeParams.get, params.zeroPadderRangeAddress.get))) else None
   val zeroPadderDoppler = if (params.zeroPadderDopplerParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.zeroPadderDopplerParams.get, params.zeroPadderDopplerAddress.get))) else None
-
-  //val zeroPadderDoppler = Some(LazyModule(new ))
+  val windowingRange = if (params.winRangeParams != None) Some(LazyModule(new WindowingBlockMultipleInOuts(params.winRangeAddress.get, params.winRangeRAMAddress, params.winRangeParams.get, beatBytes))) else None
+  val windowingDoppler = if (params.winDopplerParams != None) Some(LazyModule(new WindowingBlockMultipleInOuts(params.winDopplerAddress.get, params.winDopplerRAMAddress, params.winDopplerParams.get, beatBytes))) else None
 
   for (i <- 0 until params.fft2ControlParams.numRxs) {
     if (params.zeroPadderRangeParams != None) {
-      rangeFFT.streamNode := zeroPadderRange.get.streamNode
-      fft2Control.streamNode := rangeFFT.streamNode   // AXI4StreamBuffer() - maybe not necessary to have - to be checked
+      if (params.winRangeParams != None) {
+        windowingRange.get.streamNode := zeroPadderRange.get.streamNode
+        rangeFFT.streamNode := windowingRange.get.streamNode
+      }
+      else {
+        rangeFFT.streamNode := zeroPadderRange.get.streamNode
+      }
+    //  fft2Control.streamNode := rangeFFT.streamNode   // AXI4StreamBuffer() - maybe not necessary to have - to be checked
     }
     else {
-      fft2Control.streamNode := rangeFFT.streamNode   // AXI4StreamBuffer() - maybe not necessary to have - to be checked
+      if (params.winRangeParams != None) {
+        rangeFFT.streamNode := windowingRange.get.streamNode
+      }
     }
+    fft2Control.streamNode := rangeFFT.streamNode   // AXI4StreamBuffer() - maybe not necessary to have - to be checked
   }
   for (i <- 0 until params.fft2ControlParams.outputNodes) {
     if (params.zeroPadderDopplerParams != None) {
-      dopplerFFT.streamNode  := zeroPadderDoppler.get.streamNode
-      zeroPadderDoppler.get.streamNode := fft2Control.streamNode
+      if (params.winDopplerParams != None) {
+        windowingDoppler.get.streamNode := zeroPadderDoppler.get.streamNode
+        dopplerFFT.streamNode := windowingDoppler.get.streamNode
+        zeroPadderDoppler.get.streamNode := fft2Control.streamNode
+      }
+      else {
+        dopplerFFT.streamNode  := zeroPadderDoppler.get.streamNode
+        zeroPadderDoppler.get.streamNode := fft2Control.streamNode
+      }
     }
     else {
-      dopplerFFT.streamNode := fft2Control.streamNode // AXI4StreamBuffer()
+      if (params.winDopplerParams != None) {
+        windowingDoppler.get.streamNode := fft2Control.streamNode
+        dopplerFFT.streamNode := windowingDoppler.get.streamNode
+      }
+      else {
+        dopplerFFT.streamNode := fft2Control.streamNode // AXI4StreamBuffer()
+      }
     }
   }
 
@@ -85,6 +113,12 @@ class AXI4StreamFFT2RDBlock [T <: Data : Real: BinaryRepresentation] (val params
   if (params.zeroPadderDopplerParams != None) {
     blocks = blocks :+ zeroPadderDoppler.get
   }
+  /*if (params.winRangeParams != None) {
+    blocks = blocks :+ windowingRange.get
+  }
+  if (params.winDopplerParams != None) {
+    blocks = blocks :+ windowingDoppler.get
+  }*/
   //print(blocks.length)
 
   val bus = LazyModule(new AXI4Xbar)
@@ -92,6 +126,12 @@ class AXI4StreamFFT2RDBlock [T <: Data : Real: BinaryRepresentation] (val params
 
   for (b <- blocks) {
     b.mem.foreach { _ := AXI4Buffer() := bus.node }
+  }
+  if (params.winRangeParams != None) {
+    windowingRange.get.windowing.mem.get := bus.node
+  }
+  if (params.winDopplerParams != None) {
+    windowingDoppler.get.windowing.mem.get := bus.node
   }
 
   lazy val module = new LazyModuleImp(this) {}
@@ -146,7 +186,7 @@ object FFT2RDDspBlockAXI4 extends App
                                             pingPong = false,
                                             readXYZorXZY = Some(false)),
       // zeropadder parameters
-      zeroPadderRangeParams = Some(ZeroPadderParams(
+      zeroPadderRangeParams = None, /*Some(ZeroPadderParams(
                                   proto = FixedPoint(16.W, 10.BP),
                                   packetSizeStart = 256,
                                   packetSizeEnd  = 256,       // range FFT size
@@ -154,8 +194,8 @@ object FFT2RDDspBlockAXI4 extends App
                                   useQueue = false,
                                   isDataComplex = true
                                 )
-                              ),
-      zeroPadderDopplerParams = Some(ZeroPadderParams(
+                              ),*/
+      zeroPadderDopplerParams = None, /*Some(ZeroPadderParams(
                                   proto = FixedPoint(16.W, 10.BP),
                                   packetSizeStart = 32,
                                   packetSizeEnd  = 32,
@@ -163,9 +203,37 @@ object FFT2RDDspBlockAXI4 extends App
                                   useQueue = false,
                                   isDataComplex = true
                                 )
-                              ),
-      zeroPadderRangeAddress  = Some(AddressSet(0x03000, 0xFFF)),
-      zeroPadderDopplerAddress = Some(AddressSet(0x04000, 0xFFF)),
+                              ),*/
+      winRangeParams = Some(WindowingParams.fixed(
+                        dataWidth = 16,
+                        binPoint = 14,
+                        numMulPipes = 1,
+                        numPoints = rangeFFTSize,
+                        trimType = Convergent,
+                        dirName = "test_run_dir",
+                        memoryFile = "./test_run_dir/blacman.txt",
+                        constWindow = false,
+                        windowFunc = WindowFunctionTypes.Blackman(dataWidth_tmp = 16)
+                      )
+                    ),
+      winDopplerParams = Some(WindowingParams.fixed(
+                        dataWidth = 16,
+                        binPoint = 14,
+                        numMulPipes = 1,
+                        numPoints = dopplerFFTSize,
+                        trimType = Convergent,
+                        dirName = "test_run_dir",
+                        memoryFile = "./test_run_dir/blacman.txt",
+                        constWindow = false,
+                        windowFunc = WindowFunctionTypes.Blackman(dataWidth_tmp = 16)
+                      )
+                    ),
+      zeroPadderRangeAddress  = None,  //Some(AddressSet(0x03000, 0xFFF)),
+      zeroPadderDopplerAddress = None, //Some(AddressSet(0x04000, 0xFFF)),
+      winDopplerAddress = Some(AddressSet(0x05000, 0xFFF)),
+      winRangeAddress = Some(AddressSet(0x06000, 0xFFF)),
+      winDopplerRAMAddress = Some(AddressSet(0x10000, 0xFFFF)), // constWindow needs to be set to true if it is None
+      winRangeRAMAddress = Some(AddressSet(0x20000, 0xFFFF)),
       fft2ControlAddress = AddressSet(0x00000, 0xFFF),
       rangeFFTAddress    = AddressSet(0x01000, 0xFFF),
       dopplerFFTAddress  = AddressSet(0x02000, 0xFFF)
