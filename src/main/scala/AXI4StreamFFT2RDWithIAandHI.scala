@@ -14,6 +14,7 @@ import freechips.rocketchip.diplomacy._
 import fft._
 import utils._
 import zeropadder._
+import windowing._
 
 trait AXI4FFT2RDWithIAandHIStandaloneBlock extends AXI4StreamFFT2RDWithIAandHI[FixedPoint] {
   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
@@ -53,32 +54,61 @@ class AXI4StreamFFT2RDWithIAandHI [T <: Data : Real: BinaryRepresentation] (val 
   val dopplerFFT  = LazyModule(new AXI4MultipleFFTsBlock(params.dopplerFFTParams, params.dopplerFFTAddress, _beatBytes = beatBytes, configInterface = false))
   val zeroPadderRange = if (params.zeroPadderRangeParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.zeroPadderRangeParams.get, params.zeroPadderRangeAddress.get))) else None
   val zeroPadderDoppler = if (params.zeroPadderDopplerParams != None) Some(LazyModule(new AXI4MultipleZeroPadders(params.zeroPadderDopplerParams.get, params.zeroPadderDopplerAddress.get))) else None
+  val windowingRange = if (params.winRangeParams != None) Some(LazyModule(new WindowingBlockMultipleInOuts(params.winRangeAddress.get, params.winRangeRAMAddress, params.winRangeParams.get, beatBytes))) else None
+  val windowingDoppler = if (params.winDopplerParams != None) Some(LazyModule(new WindowingBlockMultipleInOuts(params.winDopplerAddress.get, params.winDopplerRAMAddress, params.winDopplerParams.get, beatBytes))) else None
+
   val headerInserter = LazyModule(new AXI4HeaderInserterBlock(mode1024, hIAddress, beatBytes))
 
   for (i <- 0 until params.fft2ControlParams.numRxs) {
     if (params.zeroPadderRangeParams != None) {
-      zeroPadderRange.get.streamNode := AXI4StreamBuffer() := inputAdapter.streamNode
-      rangeFFT.streamNode := AXI4StreamBuffer() := zeroPadderRange.get.streamNode
+      if (params.winRangeParams != None) {
+        zeroPadderRange.get.streamNode := AXI4StreamBuffer() := inputAdapter.streamNode
+        windowingRange.get.streamNode := AXI4StreamBuffer() := zeroPadderRange.get.streamNode
+        rangeFFT.streamNode := AXI4StreamBuffer() := windowingRange.get.streamNode
+      }
+      else {
+        zeroPadderRange.get.streamNode := AXI4StreamBuffer() := inputAdapter.streamNode
+        rangeFFT.streamNode := AXI4StreamBuffer() := zeroPadderRange.get.streamNode
+      }
       fft2Control.streamNode := AXI4StreamBuffer() := rangeFFT.streamNode
     }
     else {
-      rangeFFT.streamNode := inputAdapter.streamNode
-      fft2Control.streamNode := rangeFFT.streamNode
+      if (params.winRangeParams != None) {
+        windowingRange.get.streamNode := inputAdapter.streamNode
+        rangeFFT.streamNode := AXI4StreamBuffer() := windowingRange.get.streamNode
+      }
+      else {
+        rangeFFT.streamNode := AXI4StreamBuffer() := inputAdapter.streamNode
+      }
+      fft2Control.streamNode := AXI4StreamBuffer() := rangeFFT.streamNode
     }
   }
   for (i <- 0 until params.fft2ControlParams.outputNodes) {
     if (params.zeroPadderDopplerParams != None) {
-      dopplerFFT.streamNode  := AXI4StreamBuffer() := zeroPadderDoppler.get.streamNode
-      zeroPadderDoppler.get.streamNode := AXI4StreamBuffer() := fft2Control.streamNode
+      if (params.winDopplerParams != None) {
+        windowingDoppler.get.streamNode := AXI4StreamBuffer() := zeroPadderDoppler.get.streamNode
+        dopplerFFT.streamNode := AXI4StreamBuffer() := windowingDoppler.get.streamNode
+        zeroPadderDoppler.get.streamNode := AXI4StreamBuffer() := fft2Control.streamNode
+      }
+      else {
+        dopplerFFT.streamNode  := AXI4StreamBuffer() := zeroPadderDoppler.get.streamNode
+        zeroPadderDoppler.get.streamNode := AXI4StreamBuffer() := fft2Control.streamNode
+      }
       headerInserter.streamNode :=  AXI4StreamBuffer() := dopplerFFT.streamNode
     }
     else {
-      dopplerFFT.streamNode := AXI4StreamBuffer() := fft2Control.streamNode
+      if (params.winDopplerParams != None) {
+        windowingDoppler.get.streamNode := fft2Control.streamNode
+        dopplerFFT.streamNode := windowingDoppler.get.streamNode
+      }
+      else {
+        dopplerFFT.streamNode := fft2Control.streamNode
+      }
       headerInserter.streamNode := AXI4StreamBuffer() := dopplerFFT.streamNode
     }
   }
 
-  var blocks = Seq(fft2Control, rangeFFT, dopplerFFT, headerInserter) // instead of lazy val, var is used
+  var blocks = Seq(fft2Control, rangeFFT, dopplerFFT, headerInserter)
   if (params.zeroPadderRangeParams != None) {
     blocks = blocks :+ zeroPadderRange.get
   }
@@ -90,6 +120,12 @@ class AXI4StreamFFT2RDWithIAandHI [T <: Data : Real: BinaryRepresentation] (val 
 
   for (b <- blocks) {
     b.mem.foreach { _ := AXI4Buffer() := bus.node }
+  }
+  if (params.winRangeParams != None) {
+    windowingRange.get.windowing.mem.get := bus.node
+  }
+  if (params.winDopplerParams != None) {
+    windowingDoppler.get.windowing.mem.get := bus.node
   }
 
   lazy val module = new LazyModuleImp(this) {}
@@ -161,13 +197,41 @@ object FFT2RDWithIAandHIDspBlockAXI4 extends App
                                   isDataComplex = true
                                 )
                               ),
-      zeroPadderRangeAddress  = Some(AddressSet(0x80003000L, 0xFFF)),
+      winRangeParams = Some(WindowingParams.fixed(
+                        dataWidth = 12,
+                        binPoint = 10,
+                        numMulPipes = 1,
+                        numPoints = rangeFFTSize,
+                        trimType = Convergent,
+                        dirName = "test_run_dir",
+                        memoryFile = "./test_run_dir/blacman.txt",
+                        constWindow = true,
+                        windowFunc = WindowFunctionTypes.Blackman(dataWidth_tmp = 16)
+                      )
+                    ),
+      winDopplerParams = Some(WindowingParams.fixed(
+                        dataWidth = 16,
+                        binPoint = 10,
+                        numMulPipes = 1,
+                        numPoints = dopplerFFTSize,
+                        trimType = Convergent,
+                        dirName = "test_run_dir",
+                        memoryFile = "./test_run_dir/blacman.txt",
+                        constWindow = true,
+                        windowFunc = WindowFunctionTypes.Hamming(dataWidth_tmp = 16)
+                      )
+                    ),
+      zeroPadderRangeAddress = Some(AddressSet(0x80003000L, 0xFFF)),
       zeroPadderDopplerAddress = Some(AddressSet(0x80004000L, 0xFFF)),
+      winDopplerAddress = Some(AddressSet(0x80005000L, 0xFFF)),
+      winRangeAddress = Some(AddressSet(0x80006000L, 0xFFF)),
+      winDopplerRAMAddress = None, //Some(AddressSet(0x10000, 0xFFFF)), // constWindow needs to be set to true if it is None
+      winRangeRAMAddress = None,   //Some(AddressSet(0x20000, 0xFFFF)),
       fft2ControlAddress = AddressSet(0x80000000L, 0xFFF),
       rangeFFTAddress    = AddressSet(0x80001000L, 0xFFF),
       dopplerFFTAddress  = AddressSet(0x80002000L, 0xFFF)
     )
-  val hiAddress = AddressSet(0x80005000L, 0xFFF)
+  val hiAddress = AddressSet(0x80007000L, 0xFFF)
 
   val mode1024 = false
   implicit val p: Parameters = Parameters.empty
