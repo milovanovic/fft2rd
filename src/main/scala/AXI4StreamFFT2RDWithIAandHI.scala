@@ -206,7 +206,7 @@ object FFT2RDWithIAandHIDspBlockAXI4 extends App
                         dirName = "test_run_dir",
                         memoryFile = "./test_run_dir/blacman.txt",
                         constWindow = true,
-                        windowFunc = WindowFunctionTypes.Blackman(dataWidth_tmp = 16)
+                        windowFunc = WindowFunctionTypes.Blackman(dataWidth_tmp = 12)
                       )
                     ),
       winDopplerParams = Some(WindowingParams.fixed(
@@ -218,7 +218,7 @@ object FFT2RDWithIAandHIDspBlockAXI4 extends App
                         dirName = "test_run_dir",
                         memoryFile = "./test_run_dir/blacman.txt",
                         constWindow = true,
-                        windowFunc = WindowFunctionTypes.Hamming(dataWidth_tmp = 16)
+                        windowFunc = WindowFunctionTypes.Hamming(dataWidth_tmp = 12)
                       )
                     ),
       zeroPadderRangeAddress = Some(AddressSet(0x80003000L, 0xFFF)),
