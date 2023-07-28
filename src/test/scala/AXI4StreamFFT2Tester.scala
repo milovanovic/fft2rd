@@ -8,11 +8,11 @@ import fft._
 import zeropadder._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.config.Parameters
 
 import chisel3.iotesters.PeekPokeTester
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.chipsalliance.cde.config.Parameters
 
 import breeze.math.Complex
 import scala.util.{Random}
