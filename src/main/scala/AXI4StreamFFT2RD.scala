@@ -7,8 +7,9 @@ import chisel3.experimental._
 import dsptools.numbers._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
+import org.chipsalliance.cde.config.Parameters
+
 import fft._
 import windowing._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
@@ -54,6 +55,8 @@ trait AXI4FFT2RDStandaloneBlock extends AXI4StreamFFT2RDBlock[FixedPoint] {
     InModuleBody { in.makeIO() }
   }
 }
+
+// KRENI DA IZBACUJES JEDAN PO JEDAN POCEVSI OD IZLAZA!!!
 
 class AXI4StreamFFT2RDBlock [T <: Data : Real: BinaryRepresentation] (val params: FFT2RDParams[T], val beatBytes: Int) extends LazyModule()(Parameters.empty) {
   // number of chirps
@@ -141,9 +144,9 @@ object FFT2RDDspBlockAXI4 extends App
 {
   val rangeFFTSize = 256
   val dopplerFFTSize = 32
-  val numTxs = 2
-  val numRxs = 4
-  val outputNodes = 8
+  val numTxs = 4
+  val numRxs = 8
+  val outputNodes = 32
 
   val paramsFFT2RD: FFT2RDParams[FixedPoint] = FFT2RDParams (
       rangeFFTParams = FFTParams.fixed(

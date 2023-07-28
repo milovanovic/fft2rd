@@ -6,9 +6,10 @@ import chisel3.util._
 import dspblocks._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.regmapper._
+
+import org.chipsalliance.cde.config.Parameters
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 trait AXI4FFT2RDControlStandaloneBlock extends AXI4StreamFFT2RDControlBlock {
@@ -475,7 +476,8 @@ class AXI4StreamFFT2RDControlBlock(val params: FFT2RDControlParams, address: Add
 
 object FFT2RDControlDspBlockAXI4 extends App
 {
-  val paramsFFT2RDControl: FFT2RDControlParams = FFT2RDControlParams(rangeFFTSize = 256, dopplerFFTSize = 32, numRxs = 4, numTxs = 3, outputNodes = 1, pingPong = true)
+  //val paramsFFT2RDControl: FFT2RDControlParams = FFT2RDControlParams(rangeFFTSize = 256, dopplerFFTSize = 32, numRxs = 8, numTxs = 4, outputNodes = 32, pingPong = true)
+  val paramsFFT2RDControl: FFT2RDControlParams = FFT2RDControlParams(rangeFFTSize = 256, dopplerFFTSize = 128, numRxs = 8, numTxs = 9, outputNodes = 72, pingPong = true)
   implicit val p: Parameters = Parameters.empty
 
   val fft2Module = LazyModule(new AXI4StreamFFT2RDControlBlock(paramsFFT2RDControl, AddressSet(0x00000, 0xFF), beatBytes = 4) with AXI4FFT2RDControlStandaloneBlock)

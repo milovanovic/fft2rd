@@ -7,12 +7,12 @@ import dspblocks._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.regmapper._
-import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
+import org.chipsalliance.cde.config.Parameters
 
 class SplitterAND(beatBytes: Int) extends LazyModule()(Parameters.empty) {
 

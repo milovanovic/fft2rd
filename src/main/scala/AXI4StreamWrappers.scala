@@ -5,8 +5,8 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.diplomacy._
+import org.chipsalliance.cde.config.Parameters
 
 class AXI4StreamOutIO extends Bundle {
   val valid_out = Output(Bool())

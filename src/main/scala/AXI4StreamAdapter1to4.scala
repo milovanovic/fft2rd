@@ -5,8 +5,8 @@ import chisel3.util._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
+import org.chipsalliance.cde.config.Parameters
 
 class AXI4StreamAdapter1to4(val beatBytes: Int) extends LazyModule()(Parameters.empty) {
   val streamNode = AXI4StreamNexusNode(

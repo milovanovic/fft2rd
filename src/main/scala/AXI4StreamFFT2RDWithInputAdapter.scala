@@ -7,11 +7,11 @@ import chisel3.experimental._
 import dsptools.numbers._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.amba.axi4stream._
-import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import fft._
 import zeropadder._
+import org.chipsalliance.cde.config.Parameters
 
 trait AXI4FFT2RDWithInputAdapterStandaloneBlock extends AXI4StreamFFT2RDWithInputAdapter[FixedPoint] {
   def standaloneParams = AXI4BundleParameters(addrBits = 32, dataBits = 32, idBits = 1)
