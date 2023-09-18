@@ -12,18 +12,18 @@ import org.chipsalliance.cde.config.Parameters
 
 import scala.util.{Random}
 
-class AXI4StreamAdapter1to4Tester (
-  dut: AXI4StreamAdapter1to4 with AXI4StreamAdapter1to4StandaloneBlock,
-  beatBytes: Int = 4,
-  sizeOfInputVector: Int = 8,
-) extends PeekPokeTester(dut.module) {
+class AXI4StreamAdapter1to4Tester(
+  dut:               AXI4StreamAdapter1to4 with AXI4StreamAdapter1to4StandaloneBlock,
+  beatBytes:         Int = 4,
+  sizeOfInputVector: Int = 8)
+    extends PeekPokeTester(dut.module) {
 
   Random.setSeed(11110L)
-  val inData = Seq.fill(sizeOfInputVector)(Random.nextInt(1<<(beatBytes*2)).toDouble)
+  val inData = Seq.fill(sizeOfInputVector)(Random.nextInt(1 << (beatBytes * 2)).toDouble)
   var cntIn = 0
   var cntOut = 0
   var inValid = 0
-  val sizeOfOutputVector = (sizeOfInputVector/4).toInt
+  val sizeOfOutputVector = (sizeOfInputVector / 4).toInt
   var outReady = 0
   var peekedVal0: BigInt = 0
   var peekedVal1: BigInt = 0
@@ -47,8 +47,7 @@ class AXI4StreamAdapter1to4Tester (
         println(inData(cntIn).toString)
         cntIn = cntIn + 1
       }
-    }
-    else {
+    } else {
       poke(dut.ins(0).valid, 0)
     }
     if (peek(dut.outs(0).ready) == BigInt(1) && peek(dut.outs(0).valid) == BigInt(1)) {
@@ -56,10 +55,10 @@ class AXI4StreamAdapter1to4Tester (
       peekedVal1 = peek(dut.outs(1).bits.data)
       peekedVal2 = peek(dut.outs(2).bits.data)
       peekedVal3 = peek(dut.outs(3).bits.data)
-      assert(peekedVal0 == inData(cntOut*4).toInt)
-      assert(peekedVal1 == inData(cntOut*4 + 1).toInt)
-      assert(peekedVal2 == inData(cntOut*4 + 2).toInt)
-      assert(peekedVal3 == inData(cntOut*4 + 3).toInt)
+      assert(peekedVal0 == inData(cntOut * 4).toInt)
+      assert(peekedVal1 == inData(cntOut * 4 + 1).toInt)
+      assert(peekedVal2 == inData(cntOut * 4 + 2).toInt)
+      assert(peekedVal3 == inData(cntOut * 4 + 3).toInt)
       /*println(inData(cntOut*4).toString)
       println(inData(cntOut*4 + 1).toString)
       println(inData(cntOut*4 + 2).toString)
@@ -68,7 +67,7 @@ class AXI4StreamAdapter1to4Tester (
     }
     step(1)
   }
-  step (100)
+  step(100)
 }
 
 class AXI4StreamAdapter1to4Spec extends AnyFlatSpec with Matchers {
@@ -77,9 +76,8 @@ class AXI4StreamAdapter1to4Spec extends AnyFlatSpec with Matchers {
 
   val testModule = LazyModule(new AXI4StreamAdapter1to4(beatBytes = 4) with AXI4StreamAdapter1to4StandaloneBlock)
   it should f"test AXI4StreamAdapter1to4 Module" in {
-    chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-      c => new AXI4StreamAdapter1to4Tester(dut = testModule,
-                                           beatBytes = 4,
-                                           sizeOfInputVector = 8)}  should be (true)
+    chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
+      new AXI4StreamAdapter1to4Tester(dut = testModule, beatBytes = 4, sizeOfInputVector = 8)
+    } should be(true)
   }
 }

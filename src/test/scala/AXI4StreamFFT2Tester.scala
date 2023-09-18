@@ -19,34 +19,40 @@ import scala.util.{Random}
 import scala.io.Source
 import dsptools.numbers._
 
-class AXI4StreamFFT2RDBlockTester (
-  dut: AXI4StreamFFT2RDBlock[FixedPoint] with AXI4FFT2RDStandaloneBlock,
-  params: FFT2RDParams[FixedPoint],
-  inFileNameReal: String,
-  inFileNameImag: String,
+class AXI4StreamFFT2RDBlockTester(
+  dut:             AXI4StreamFFT2RDBlock[FixedPoint] with AXI4FFT2RDStandaloneBlock,
+  params:          FFT2RDParams[FixedPoint],
+  inFileNameReal:  String,
+  inFileNameImag:  String,
   outFileNameReal: String,
   outFileNameImag: String,
-  beatBytes: Int = 4,
-  silentFail: Boolean = false,
-) extends PeekPokeTester(dut.module) with AXI4MasterModel {
+  beatBytes:       Int = 4,
+  silentFail:      Boolean = false)
+    extends PeekPokeTester(dut.module)
+    with AXI4MasterModel {
 
-  def asNdigitBinary (source: Int, digits: Int): String = {
+  def asNdigitBinary(source: Int, digits: Int): String = {
     val lstring = source.toBinaryString
     if (source >= 0) {
       val l: java.lang.Long = lstring.toLong
-      String.format ("%0" + digits + "d", l)
-    }
-    else
+      String.format("%0" + digits + "d", l)
+    } else
       lstring.takeRight(digits)
   }
 
   /**
-   * Format complex data to be compatible with AXI4 stream interface (lenght = 32)
-   */
-  def formAXI4StreamComplexData(inData : Seq[Complex], dataWidth: Int): Seq[Int] = {
-    inData.map(data => java.lang.Long.parseLong(
-                                  asNdigitBinary(data.real.toInt, dataWidth) ++
-                                  asNdigitBinary(data.imag.toInt, dataWidth), 2).toInt)
+    * Format complex data to be compatible with AXI4 stream interface (lenght = 32)
+    */
+  def formAXI4StreamComplexData(inData: Seq[Complex], dataWidth: Int): Seq[Int] = {
+    inData.map(data =>
+      java.lang.Long
+        .parseLong(
+          asNdigitBinary(data.real.toInt, dataWidth) ++
+            asNdigitBinary(data.imag.toInt, dataWidth),
+          2
+        )
+        .toInt
+    )
   }
 
   def readFile(filename: String): Array[Int] = {
@@ -57,16 +63,23 @@ class AXI4StreamFFT2RDBlockTester (
   }
 
   override def memAXI: AXI4Bundle = dut.ioMem.get
-  val mod     = dut.module
+  val mod = dut.module
 
   val inputDataReal = readFile(inFileNameReal)
   val inputDataImag = readFile(inFileNameImag)
   val outputDataReal = readFile(outFileNameReal)
   val outputDataImag = readFile(outFileNameImag)
 
-  val inData = formAXI4StreamComplexData(inputDataReal.zip(inputDataImag).map { case(real, imag) => Complex(real.toInt, imag.toInt) }.toSeq, 16)     // form complex input data
-  var expected = formAXI4StreamComplexData(outputDataReal.zip(outputDataImag).map { case(real, imag) => Complex(real.toInt, imag.toInt) }.toSeq, 16) // form complex output data
-  val numberOfLoops = params.fft2ControlParams.rangeFFTSize*params.fft2ControlParams.dopplerFFTSize*params.fft2ControlParams.numTxs
+  val inData = formAXI4StreamComplexData(
+    inputDataReal.zip(inputDataImag).map { case (real, imag) => Complex(real.toInt, imag.toInt) }.toSeq,
+    16
+  ) // form complex input data
+  var expected = formAXI4StreamComplexData(
+    outputDataReal.zip(outputDataImag).map { case (real, imag) => Complex(real.toInt, imag.toInt) }.toSeq,
+    16
+  ) // form complex output data
+  val numberOfLoops =
+    params.fft2ControlParams.rangeFFTSize * params.fft2ControlParams.dopplerFFTSize * params.fft2ControlParams.numTxs
   val totalOutData = numberOfLoops * params.fft2ControlParams.numRxs // this is all for number of outputNodes equal to 1
 
   var inValid = 0
@@ -74,14 +87,15 @@ class AXI4StreamFFT2RDBlockTester (
 
   while (cntIn < numberOfLoops) {
     inValid = Random.nextInt(2)
-    dut.ins.zipWithIndex.map { case (in, idx) =>
-      poke(in.valid, inValid)
-      if (peek(in.ready) == BigInt(1) && peek(in.valid) == BigInt(1)) {
-        poke(in.bits.data, inData(cntIn + idx*numberOfLoops).toInt)
-        if (cntIn == (numberOfLoops - 1)) {
-          poke(in.bits.last, BigInt(1))
+    dut.ins.zipWithIndex.map {
+      case (in, idx) =>
+        poke(in.valid, inValid)
+        if (peek(in.ready) == BigInt(1) && peek(in.valid) == BigInt(1)) {
+          poke(in.bits.data, inData(cntIn + idx * numberOfLoops).toInt)
+          if (cntIn == (numberOfLoops - 1)) {
+            poke(in.bits.last, BigInt(1))
+          }
         }
-      }
     }
     val readyIns = dut.ins.map { case in => if (peek(in.ready) == BigInt(1)) true else false }
     val readyAND = readyIns.reduce(_ && _)
@@ -101,26 +115,27 @@ class AXI4StreamFFT2RDBlockTester (
   // Random.setSeed(11110L)!
   cntIn = 0
 
-  step (20)
+  step(20)
   var cntValid = 0
   var peekedVal: BigInt = 0
   var outReady = 0
 
   while (cntValid < totalOutData) {
     outReady = Random.nextInt(2)
-    dut.outs.zipWithIndex.map { case (out, idx) =>
-      poke(out.ready, outReady)
-      if (peek(out.ready) == BigInt(1) && peek(out.valid) == BigInt(1)) {
-        peekedVal = peek(out.bits.data)
-        assert(peekedVal.toInt == expected(cntValid))
-        if (peekedVal.toInt == expected(cntValid)) {
-          cntValid = cntValid + 1
-          //println(cntValid.toString)
+    dut.outs.zipWithIndex.map {
+      case (out, idx) =>
+        poke(out.ready, outReady)
+        if (peek(out.ready) == BigInt(1) && peek(out.valid) == BigInt(1)) {
+          peekedVal = peek(out.bits.data)
+          assert(peekedVal.toInt == expected(cntValid))
+          if (peekedVal.toInt == expected(cntValid)) {
+            cntValid = cntValid + 1
+            //println(cntValid.toString)
+          }
+          if (cntValid >= (totalOutData - params.fft2ControlParams.outputNodes + 1)) {
+            expect(out.bits.last, 1)
+          }
         }
-        if (cntValid >= (totalOutData - params.fft2ControlParams.outputNodes + 1)) {
-          expect(out.bits.last, 1)
-        }
-      }
     }
     step(1)
   }
@@ -133,14 +148,15 @@ class AXI4StreamFFT2RDBlockTester (
 
   while (cntIn < numberOfLoops) {
     inValid = Random.nextInt(2)
-    dut.ins.zipWithIndex.map { case (in, idx) =>
-      poke(in.valid, inValid)
-      if (peek(in.ready) == BigInt(1) && peek(in.valid) == BigInt(1)) {
-        poke(in.bits.data, inData(cntIn + idx*numberOfLoops).toInt)
-        if (cntIn == (numberOfLoops - 1)) {
-          poke(in.bits.last, BigInt(1))
+    dut.ins.zipWithIndex.map {
+      case (in, idx) =>
+        poke(in.valid, inValid)
+        if (peek(in.ready) == BigInt(1) && peek(in.valid) == BigInt(1)) {
+          poke(in.bits.data, inData(cntIn + idx * numberOfLoops).toInt)
+          if (cntIn == (numberOfLoops - 1)) {
+            poke(in.bits.last, BigInt(1))
+          }
         }
-      }
     }
     val readyIns = dut.ins.map { case in => if (peek(in.ready) == BigInt(1)) true else false }
     val readyAND = readyIns.reduce(_ && _)
@@ -157,22 +173,23 @@ class AXI4StreamFFT2RDBlockTester (
     poke(in.bits.last, BigInt(0))
   }
   // Random.setSeed(11110L)!
-  step (20)
+  step(20)
 
   while (cntValid < totalOutData) {
     outReady = Random.nextInt(2)
-    dut.outs.zipWithIndex.map { case (out, idx) =>
-      poke(out.ready, outReady)
-      if (peek(out.ready) == BigInt(1) && peek(out.valid) == BigInt(1)) {
-        peekedVal = peek(out.bits.data)
-        assert(peekedVal.toInt == expected(cntValid))
-        if (peekedVal.toInt == expected(cntValid)) {
-          cntValid = cntValid + 1
+    dut.outs.zipWithIndex.map {
+      case (out, idx) =>
+        poke(out.ready, outReady)
+        if (peek(out.ready) == BigInt(1) && peek(out.valid) == BigInt(1)) {
+          peekedVal = peek(out.bits.data)
+          assert(peekedVal.toInt == expected(cntValid))
+          if (peekedVal.toInt == expected(cntValid)) {
+            cntValid = cntValid + 1
+          }
+          if (cntValid >= (totalOutData - params.fft2ControlParams.outputNodes + 1)) {
+            expect(out.bits.last, 1)
+          }
         }
-        if (cntValid >= (totalOutData - params.fft2ControlParams.outputNodes + 1)) {
-          expect(out.bits.last, 1)
-        }
-      }
     }
     step(1)
   }
@@ -184,31 +201,37 @@ class AXI4StreamFFT2RDBlockSpec extends AnyFlatSpec with Matchers {
   val dopplerFFTSize = 32
   val numTxs = 3
   val numRxs = 4
-  val outputNodes = 12 // all variants are ok, readXYZ parameter needs to be defined when number of output ports is equal to 1
+  val outputNodes =
+    12 // all variants are ok, readXYZ parameter needs to be defined when number of output ports is equal to 1
 
   implicit val p: Parameters = Parameters.empty
 
-  for (i <-0 until numOfIterations) {
-    for (dir <- Seq(false)) {//, false)) {
+  for (i <- 0 until numOfIterations) {
+    for (dir <- Seq(false)) { //, false)) {
       var readDir = if (dir) 1 else 0
-      val inFileNameReal : String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/realDataIn$readDir.txt"
-      val inFileNameImag : String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/imagDataIn$readDir.txt"
-      val outFileNameReal: String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt"
-      val outFileNameImag: String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt"
+      val inFileNameReal: String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/realDataIn$readDir.txt"
+      val inFileNameImag: String = f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/imagDataIn$readDir.txt"
+      val outFileNameReal: String =
+        f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/realDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt"
+      val outFileNameImag: String =
+        f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/imagDataOut$readDir" + "outNode" + f"$outputNodes" + ".txt"
 
-      val paramsFFT2RD : FFT2RDParams[FixedPoint] = FFT2RDParams (
+      val paramsFFT2RD: FFT2RDParams[FixedPoint] = FFT2RDParams(
         rangeFFTParams = FFTParams.fixed(
           dataWidth = 12,
           twiddleWidth = 16,
           numPoints = rangeFFTSize,
-          useBitReverse  = true,
+          useBitReverse = true,
           runTime = true,
           numAddPipes = 1,
           numMulPipes = 1,
           use4Muls = true,
           sdfRadix = "2",
           trimType = Convergent,
-          expandLogic = Array.fill(log2Up(rangeFFTSize))(1).zipWithIndex.map { case (e,ind) => if (ind < 4) 1 else 0 }, // expand first four stages, other do not grow
+          expandLogic =
+            Array.fill(log2Up(rangeFFTSize))(1).zipWithIndex.map {
+              case (e, ind) => if (ind < 4) 1 else 0
+            }, // expand first four stages, other do not grow
           keepMSBorLSB = Array.fill(log2Up(rangeFFTSize))(true),
           minSRAMdepth = 64,
           binPoint = 10
@@ -217,7 +240,7 @@ class AXI4StreamFFT2RDBlockSpec extends AnyFlatSpec with Matchers {
           dataWidth = 16,
           twiddleWidth = 16,
           numPoints = dopplerFFTSize,
-          useBitReverse  = true,
+          useBitReverse = true,
           runTime = true,
           numAddPipes = 1,
           numMulPipes = 1,
@@ -229,51 +252,58 @@ class AXI4StreamFFT2RDBlockSpec extends AnyFlatSpec with Matchers {
           minSRAMdepth = 8,
           binPoint = 10
         ),
-        fft2ControlParams  = FFT2RDControlParams(rangeFFTSize = rangeFFTSize,
-                                              dopplerFFTSize = dopplerFFTSize,
-                                              numTxs = numTxs,
-                                              numRxs = numRxs,
-                                              outputNodes = outputNodes,
-                                              pingPong = false,
-                                              readXYZorXZY = None),//Some(dir)),
+        fft2ControlParams = FFT2RDControlParams(
+          rangeFFTSize = rangeFFTSize,
+          dopplerFFTSize = dopplerFFTSize,
+          numTxs = numTxs,
+          numRxs = numRxs,
+          outputNodes = outputNodes,
+          pingPong = false,
+          readXYZorXZY = None
+        ), //Some(dir)),
         // zeropadder parameters
-        zeroPadderRangeParams = Some(ZeroPadderParams(
-                                    proto = FixedPoint(16.W, 10.BP),
-                                    packetSizeStart = 256,
-                                    packetSizeEnd  = 256,       // range FFT size
-                                    numberOfPackets = 32*3,     // dopplerFFTSize * numTxs
-                                    useQueue = false,
-                                    isDataComplex = true
-                                  )
-                                ),
-        zeroPadderDopplerParams = Some(ZeroPadderParams(
-                                    proto = FixedPoint(16.W, 10.BP),
-                                    packetSizeStart = 32,
-                                    packetSizeEnd  = 32,
-                                    numberOfPackets = ((rangeFFTSize*numTxs*numRxs)/outputNodes).toInt,  // this highly depends on number of outputNodes!, if it is equal to 1 then then it is rangeFFTSize * numTxs * numRxs
-                                    useQueue = false,
-                                    isDataComplex = true
-                                  )
-                                ),
-        zeroPadderRangeAddress  = Some(AddressSet(0x03000, 0xFFF)),
-        zeroPadderDopplerAddress = Some(AddressSet(0x04000, 0xFFF)),
-        fft2ControlAddress = AddressSet(0x00000, 0xFFF),
-        rangeFFTAddress    = AddressSet(0x01000, 0xFFF),
-        dopplerFFTAddress  = AddressSet(0x02000, 0xFFF)
+        zeroPadderRangeParams = Some(
+          ZeroPadderParams(
+            proto = FixedPoint(16.W, 10.BP),
+            packetSizeStart = 256,
+            packetSizeEnd = 256, // range FFT size
+            numberOfPackets = 32 * 3, // dopplerFFTSize * numTxs
+            useQueue = false,
+            isDataComplex = true
+          )
+        ),
+        zeroPadderDopplerParams = Some(
+          ZeroPadderParams(
+            proto = FixedPoint(16.W, 10.BP),
+            packetSizeStart = 32,
+            packetSizeEnd = 32,
+            numberOfPackets =
+              ((rangeFFTSize * numTxs * numRxs) / outputNodes).toInt, // this highly depends on number of outputNodes!, if it is equal to 1 then then it is rangeFFTSize * numTxs * numRxs
+            useQueue = false,
+            isDataComplex = true
+          )
+        ),
+        zeroPadderRangeAddress = Some(AddressSet(0x03000, 0xfff)),
+        zeroPadderDopplerAddress = Some(AddressSet(0x04000, 0xfff)),
+        fft2ControlAddress = AddressSet(0x00000, 0xfff),
+        rangeFFTAddress = AddressSet(0x01000, 0xfff),
+        dopplerFFTAddress = AddressSet(0x02000, 0xfff)
       )
       val beatBytes = 4
       val testModule = LazyModule(new AXI4StreamFFT2RDBlock(paramsFFT2RD, beatBytes) with AXI4FFT2RDStandaloneBlock)
       it should f"test Range-Doppler 2D-FFT module, results are compared with Python model of 2D-FFT design - iteration $i, with read direction equal to $readDir," in {
-        chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) {
-          c => new AXI4StreamFFT2RDBlockTester(dut = testModule,
-                                              beatBytes = 4,
-                                              params = paramsFFT2RD,
-                                              inFileNameReal = inFileNameReal,
-                                              inFileNameImag = inFileNameImag,
-                                              outFileNameReal = outFileNameReal,
-                                              outFileNameImag = outFileNameImag,
-                                              silentFail  = false)
-        } should be (true)
+        chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
+          new AXI4StreamFFT2RDBlockTester(
+            dut = testModule,
+            beatBytes = 4,
+            params = paramsFFT2RD,
+            inFileNameReal = inFileNameReal,
+            inFileNameImag = inFileNameImag,
+            outFileNameReal = outFileNameReal,
+            outFileNameImag = outFileNameImag,
+            silentFail = false
+          )
+        } should be(true)
       }
     }
   }

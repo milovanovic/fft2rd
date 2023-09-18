@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.linked.project.id="rocketMacros [file:/home/marijap/chisel_blocks/dsp-blocks-with-fixed-point/fft2rd/]" external.linked.project.path="$MODULE_DIR$/../../generators/rocket-chip/macros" external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_18">
+    <output url="file://$MODULE_DIR$/../../generators/rocket-chip/macros/target/scala-2.13/classes" />
+    <output-test url="file://$MODULE_DIR$/../../generators/rocket-chip/macros/target/scala-2.13/test-classes" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../generators/rocket-chip/macros">
+      <sourceFolder url="file://$MODULE_DIR$/../../generators/rocket-chip/macros/src/main/scala" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/../../generators/rocket-chip/macros/target/streams" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala-library:2.13.10:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala-reflect:2.13.10:jar" level="project" />
+  </component>
+</module>

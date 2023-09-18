@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaCompilerConfiguration">
+    <profile name="sbt 1" modules="fft2rd_8854" />
+    <profile name="sbt 2" modules="cde,rocketMacros">
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+      <parameters>
+        <parameter value="-Ymacro-annotations" />
+      </parameters>
+    </profile>
+    <profile name="sbt 3" modules="dsptools,fft2rd,fixedpoint,hardfloat,rocket-dsp-utils,sdf_fft,utils,windowing,zeropadder">
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+      <parameters>
+        <parameter value="-Ymacro-annotations" />
+      </parameters>
+      <plugins>
+        <plugin path="$USER_HOME$/.cache/coursier/v1/https/repo1.maven.org/maven2/edu/berkeley/cs/chisel3-plugin_2.13.10/3.6.0/chisel3-plugin_2.13.10-3.6.0.jar" />
+      </plugins>
+    </profile>
+    <profile name="sbt 4" modules="rocketchip">
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+      <parameters>
+        <parameter value="-Ymacro-annotations" />
+        <parameter value="-Ywarn-unused" />
+      </parameters>
+      <plugins>
+        <plugin path="$USER_HOME$/.cache/coursier/v1/https/repo1.maven.org/maven2/edu/berkeley/cs/chisel3-plugin_2.13.10/3.6.0/chisel3-plugin_2.13.10-3.6.0.jar" />
+      </plugins>
+    </profile>
+  </component>
+</project>
