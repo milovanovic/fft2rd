@@ -4,3 +4,6 @@
 [submodule "generators/zeropadder"]
 	path = generators/zeropadder
 	url = https://github.com/milovanovic/zeropadder.git
+[submodule "generators/windowing"]
+	path = generators/windowing
+	url = git@github.com:milovanovic/windowing.git
