@@ -1,24 +1,21 @@
 package fft2rd
 
-import chisel3._
+import chiseltest.{ChiselScalatestTester, VerilatorBackendAnnotation, WriteVcdAnnotation}
+import chiseltest.iotesters.PeekPokeTester
+import dsptools.misc.PeekPokeDspExtensions
 
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
-
-import chisel3.iotesters.PeekPokeTester
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import org.chipsalliance.cde.config.Parameters
-
-import breeze.signal._
-import breeze.linalg._
-import scala.util.{Random}
+import scala.util.Random
 
 class FFT2RDControlTester(
   dut:       AXI4StreamFFT2RDControlBlock with AXI4FFT2RDControlStandaloneBlock,
   params:    FFT2RDControlParams,
   beatBytes: Int = 4)
     extends PeekPokeTester(dut.module)
+    with PeekPokeDspExtensions
     with AXI4MasterModel {
 
   override def memAXI: AXI4Bundle = dut.ioMem.get
@@ -96,7 +93,7 @@ class FFT2RDControlTester(
 
   while (cntIn < params.rangeFFTSize * params.dopplerFFTSize * params.numTxs) {
     inValid = Random.nextInt(2)
-    dut.ins.zipWithIndex.map {
+    dut.ins.zipWithIndex.foreach {
       case (in, idx) =>
         poke(in.valid, inValid)
         if (peek(in.ready) == BigInt(1) && peek(in.valid) == BigInt(1)) {
@@ -121,7 +118,7 @@ class FFT2RDControlTester(
   var outReady = 0
   while (!expected.isEmpty) {
     outReady = Random.nextInt(2)
-    dut.outs.zipWithIndex.map {
+    dut.outs.zipWithIndex.foreach {
       case (out, idx) =>
         poke(out.ready, outReady)
         if (peek(out.ready) == BigInt(1) && peek(out.valid) == BigInt(1)) {
@@ -137,13 +134,7 @@ class FFT2RDControlTester(
 
   step(100)
 }
-
-//println("Output data:")
-//println(peek(dut.outs(0).bits.data).toString)
-//println("Expected data:")
-//println(expected.head.toString)
-
-class AXI4StreamFFT2RDControlBlock_Spec extends AnyFlatSpec with Matchers {
+class AXI4StreamFFT2RDControlBlock_Spec extends AnyFlatSpec with ChiselScalatestTester {
   val beatBytes = 4
   implicit val p: Parameters = Parameters.empty
 
@@ -169,9 +160,17 @@ class AXI4StreamFFT2RDControlBlock_Spec extends AnyFlatSpec with Matchers {
                     new AXI4StreamFFT2RDControlBlock(paramsFFT2RDControl, AddressSet(0x00000, 0xff), beatBytes = 4)
                       with AXI4FFT2RDControlStandaloneBlock
                   )
-                  chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
+                  /*dut: AXI4StreamFFT2RDControlBlock with AXI4FFT2RDControlStandaloneBlock
+                  params: FFT2RDControlParams
+                  beatBytes: Int = 4
+                  )*/
+
+                  test(testModule.module)
+                    .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation))
+                    .runPeekPoke(_ => new FFT2RDControlTester(testModule, paramsFFT2RDControl, beatBytes = 4))
+                  /*chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
                     new FFT2RDControlTester(dut = testModule, beatBytes = 4, params = paramsFFT2RDControl)
-                  } should be(true)
+                  } should be(true)*/
                 }
               }
             } else {
@@ -185,13 +184,17 @@ class AXI4StreamFFT2RDControlBlock_Spec extends AnyFlatSpec with Matchers {
                   outputNodes = outputNodes,
                   readXYZorXZY = None
                 )
+
                 val testModule = LazyModule(
                   new AXI4StreamFFT2RDControlBlock(paramsFFT2RDControl, AddressSet(0x00000, 0xff), beatBytes = 4)
                     with AXI4FFT2RDControlStandaloneBlock
                 )
-                chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
+                test(testModule.module)
+                  .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation))
+                  .runPeekPoke(_ => new FFT2RDControlTester(testModule, paramsFFT2RDControl, beatBytes = 4))
+                /*chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
                   new FFT2RDControlTester(dut = testModule, beatBytes = 4, params = paramsFFT2RDControl)
-                } should be(true)
+                } should be(true)*/
               }
             }
           }

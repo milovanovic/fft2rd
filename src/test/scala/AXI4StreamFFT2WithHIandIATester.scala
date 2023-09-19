@@ -1,22 +1,19 @@
 package fft2rd
 
-import chisel3._
 import chisel3.util._
-import chisel3.experimental._
-
+import chisel3.{fromDoubleToLiteral => _, fromIntToBinaryPoint => _, _}
+import chiseltest.{ChiselScalatestTester, VerilatorBackendAnnotation, WriteVcdAnnotation}
+import fixedpoint._
+import chiseltest.iotesters.PeekPokeTester
 import fft._
 import zeropadder._
 import windowing._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
-
-import chisel3.iotesters.PeekPokeTester
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import org.chipsalliance.cde.config.Parameters
 
-import breeze.math.Complex
-import scala.util.{Random}
+import scala.util.Random
 import scala.io.Source
 import dsptools.numbers._
 
@@ -135,7 +132,7 @@ class AXI4StreamFFT2RDFT2WithIAandHIBlockTester(
 //   }
   step(20)
 }
-class AXI4StreamFFT2RDWithIAandHIBlockSpec extends AnyFlatSpec with Matchers {
+class AXI4StreamFFT2RDWithIAandHIBlockSpec extends AnyFlatSpec with ChiselScalatestTester {
 
   val numOfIterations = 1
   val rangeFFTSize = 256
@@ -149,9 +146,11 @@ class AXI4StreamFFT2RDWithIAandHIBlockSpec extends AnyFlatSpec with Matchers {
     for (dir <- Seq(false)) { //, false)) {
       var readDir = if (dir) 1 else 0
       val inFileNameComplex: String =
-        f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/complexDataInHexWithInputAdapter$readDir.txt"
+        //f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/complexDataInHexWithInputAdapter$readDir.txt"
+        f"./python/gen_data_dir/complexDataInHexWithInputAdapter$readDir.txt"
       val outFileNameComplex: String =
-        f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/complexDataOutHexWithHeaderInserter$readDir.txt"
+        //f"./generators/dsp-blocks/fft2rd/python/gen_data_dir/complexDataOutHexWithHeaderInserter$readDir.txt"
+        f"./python/gen_data_dir/complexDataOutHexWithHeaderInserter$readDir.txt"
 
       val paramsFFT2RD: FFT2RDParams[FixedPoint] = FFT2RDParams(
         rangeFFTParams = FFTParams.fixed(
@@ -165,10 +164,9 @@ class AXI4StreamFFT2RDWithIAandHIBlockSpec extends AnyFlatSpec with Matchers {
           use4Muls = true,
           sdfRadix = "2",
           trimType = Convergent,
-          expandLogic =
-            Array.fill(log2Up(rangeFFTSize))(1).zipWithIndex.map {
-              case (e, ind) => if (ind < 4) 1 else 0
-            }, // expand first four stages, other do not grow
+          expandLogic = Array.fill(log2Up(rangeFFTSize))(1).zipWithIndex.map {
+            case (e, ind) => if (ind < 4) 1 else 0
+          }, // expand first four stages, other do not grow
           keepMSBorLSB = Array.fill(log2Up(rangeFFTSize))(true),
           minSRAMdepth = 64,
           binPoint = 10
@@ -262,7 +260,20 @@ class AXI4StreamFFT2RDWithIAandHIBlockSpec extends AnyFlatSpec with Matchers {
           with AXI4FFT2RDWithIAandHIStandaloneBlock
       )
       it should f"test Range-Doppler 2D-FFT module, results are compared with Python model of 2D-FFT design - iteration $i, with read direction equal to $readDir," in {
-        chisel3.iotesters.Driver.execute(Array("-fiwv", "--backend-name", "verilator"), () => testModule.module) { c =>
+        test(testModule.module)
+          .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation))
+          .runPeekPoke(_ =>
+            new AXI4StreamFFT2RDFT2WithIAandHIBlockTester(
+              dut = testModule,
+              beatBytes = 4,
+              params = paramsFFT2RD,
+              inFileNameComplex = inFileNameComplex,
+              outFileNameComplex = outFileNameComplex,
+              silentFail = false
+            )
+          )
+
+        /*chisel3.iotesters.Driver.execute(Array("-fiwv", "--backend-name", "verilator"), () => testModule.module) { c =>
           new AXI4StreamFFT2RDFT2WithIAandHIBlockTester(
             dut = testModule,
             beatBytes = 4,
@@ -271,7 +282,7 @@ class AXI4StreamFFT2RDWithIAandHIBlockSpec extends AnyFlatSpec with Matchers {
             outFileNameComplex = outFileNameComplex,
             silentFail = false
           )
-        } should be(true)
+        } should be(true)*/
       }
     }
   }

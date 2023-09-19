@@ -1,22 +1,22 @@
 package fft2rd
 
 import chisel3._
-
-import freechips.rocketchip.amba.axi4._
+import chiseltest.{ChiselScalatestTester, VerilatorBackendAnnotation, WriteVcdAnnotation}
+import chiseltest.iotesters.PeekPokeTester
+import dsptools.misc.PeekPokeDspExtensions
 import freechips.rocketchip.diplomacy._
 
-import chisel3.iotesters.PeekPokeTester
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 import org.chipsalliance.cde.config.Parameters
 
-import scala.util.{Random}
+import scala.util.Random
 
 class AXI4StreamAdapter1to4Tester(
   dut:               AXI4StreamAdapter1to4 with AXI4StreamAdapter1to4StandaloneBlock,
   beatBytes:         Int = 4,
   sizeOfInputVector: Int = 8)
-    extends PeekPokeTester(dut.module) {
+    extends PeekPokeTester(dut.module)
+    with PeekPokeDspExtensions {
 
   Random.setSeed(11110L)
   val inData = Seq.fill(sizeOfInputVector)(Random.nextInt(1 << (beatBytes * 2)).toDouble)
@@ -70,14 +70,17 @@ class AXI4StreamAdapter1to4Tester(
   step(100)
 }
 
-class AXI4StreamAdapter1to4Spec extends AnyFlatSpec with Matchers {
+class AXI4StreamAdapter1to4Spec extends AnyFlatSpec with ChiselScalatestTester {
   val beatBytes = 4
   implicit val p: Parameters = Parameters.empty
 
   val testModule = LazyModule(new AXI4StreamAdapter1to4(beatBytes = 4) with AXI4StreamAdapter1to4StandaloneBlock)
   it should f"test AXI4StreamAdapter1to4 Module" in {
-    chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
+    /*chisel3.iotesters.Driver.execute(Array("verilator"), () => testModule.module) { c =>
       new AXI4StreamAdapter1to4Tester(dut = testModule, beatBytes = 4, sizeOfInputVector = 8)
-    } should be(true)
+    } should be(true)*/
+    test(testModule.module)
+      .withAnnotations(Seq(WriteVcdAnnotation, VerilatorBackendAnnotation))
+      .runPeekPoke(_ => new AXI4StreamAdapter1to4Tester(testModule, beatBytes = 4, sizeOfInputVector = 8))
   }
 }

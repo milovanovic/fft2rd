@@ -152,7 +152,7 @@ abstract class FFT2RDControlBlock[D, U, E, O, B <: Data](params: FFT2RDControlPa
     )
 
     val activeRxs = Wire(Vec(params.numRxs, Bool()))
-    activeRxs.zipWithIndex.map {
+    activeRxs.zipWithIndex.foreach {
       case (active, index) => {
         active := Mux(numRxs >= index.U, true.B, false.B)
       }
@@ -228,7 +228,7 @@ abstract class FFT2RDControlBlock[D, U, E, O, B <: Data](params: FFT2RDControlPa
     }
 
     val numTxIndices = Wire(Vec(params.numTxs, UInt(log2Ceil(params.numTxs + 1).W)))
-    numTxIndices.zipWithIndex.map {
+    numTxIndices.zipWithIndex.foreach {
       case (txIndex, index) => {
         txIndex := index.U
       }
@@ -238,7 +238,7 @@ abstract class FFT2RDControlBlock[D, U, E, O, B <: Data](params: FFT2RDControlPa
       case (txIndex, index) =>
         //println(index)
         for (w <- index * params.numRxs until (index + 1) * (params.numRxs)) {
-          println(w)
+          //println(w)
           val inIdx = w % params.numRxs
           when(inFire) {
             when(cntTxs === txIndex) {
@@ -276,7 +276,7 @@ abstract class FFT2RDControlBlock[D, U, E, O, B <: Data](params: FFT2RDControlPa
             cntRepeatDoppler := 0.U
             when(frameCounter === (frameSize.U - 1.U)) {
               frameCounter := 0.U
-              if (params.pingPong == true) {
+              if (params.pingPong) {
                 pingPongRead.get := ~pingPongRead.get
               }
               lastFlag := true.B
@@ -309,7 +309,7 @@ abstract class FFT2RDControlBlock[D, U, E, O, B <: Data](params: FFT2RDControlPa
               cntRepeatDoppler := 0.U
               when(frameCounter === (frameSize.U - 1.U)) {
                 frameCounter := 0.U
-                if (params.pingPong == true) {
+                if (params.pingPong) {
                   pingPongRead.get := ~pingPongRead.get
                 }
                 lastFlag := true.B
@@ -326,7 +326,7 @@ abstract class FFT2RDControlBlock[D, U, E, O, B <: Data](params: FFT2RDControlPa
               frameCounter := 0.U
               when(cntRepeatDoppler === (activeRangeSamples - 1.U)) {
                 cntRepeatDoppler := 0.U
-                if (params.pingPong == true) {
+                if (params.pingPong) {
                   pingPongRead.get := ~pingPongRead.get
                 }
                 lastFlag := true.B
